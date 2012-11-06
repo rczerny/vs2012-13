@@ -1,0 +1,6 @@
+# Which files/directories should be ignored
+bin/
+build/
+.classpath
+.project
+.settings/
