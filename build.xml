@@ -15,7 +15,7 @@
     <property name="analytics.name" value="server.analytics.AnalyticsServer"/><!-- Analytics Server's full class name (including the package) -->
     <property name="billing.name" value="server.billing.BillingServer"/><!-- Billing Server's full class name (including the package) -->
     <property name="analytics.bindingName" value="AnalyticsServerRef"/><!-- RMI Binding Name of the Analytics Server -->
-    <property name="billing.bindingName" value="BillingServerRef"/><!-- RMI Binding Name of the Billing Server -->
+    <property name="billing.bindingName" value="RemoteBillingServer"/><!-- RMI Binding Name of the Billing Server -->
     <property name="server.port" value="12120"/><!-- TCP port -->
 
     <path id="project.classpath">
