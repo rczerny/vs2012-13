@@ -1,7 +1,9 @@
 package server.analytics;
 
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.rmi.AccessException;
+import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -10,12 +12,14 @@ import java.util.ArrayList;
 
 import tools.PropertiesParser;
 
-public class AnalyticsServer implements AnalyticsServerRMI{
+public class AnalyticsServer extends UnicastRemoteObject implements AnalyticsServerRMI{
+	
 	int highestSubscriptionId = 1;
 	ArrayList<Subscription> subscriptions = new ArrayList<Subscription>();
 	
-	
-	
+	protected AnalyticsServer() throws RemoteException {
+	}
+
 	@Override
 	public String subcribe(String filter) throws RemoteException {
 		Subscription sub = new Subscription(highestSubscriptionId, filter);
@@ -46,7 +50,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
+		
 		if (args.length != 1) {
 			System.err.println("Invalid arguments!");
 			System.err.println("USAGE: java AnalyticsServer <RMIBindingName>");
@@ -65,7 +69,13 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				System.err.println("Couldn't create Registry.");
 				e.printStackTrace();
 			}
-			AnalyticsServerRMI as = new AnalyticsServer();
+			AnalyticsServerRMI as = null;
+			try {
+				as = new AnalyticsServer();
+			} catch (RemoteException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			AnalyticsServerRMI ras = null;
 			try {
 				ras = (AnalyticsServerRMI) UnicastRemoteObject.exportObject(as, 0);
