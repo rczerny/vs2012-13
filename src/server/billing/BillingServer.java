@@ -1,7 +1,6 @@
 package server.billing;
 
 import java.io.FileNotFoundException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.rmi.AccessException;
 import java.rmi.RemoteException;
