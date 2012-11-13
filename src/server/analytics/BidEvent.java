@@ -1,10 +1,7 @@
 package server.analytics;
 
-public class BidEvent implements Event{
-	private String id;
+public class BidEvent extends Event{
 	private enum Type {BID_PLACED, BID_OVERBID, BID_WON;}
-	private Type type;
-	private long timestamp;
 	private long auctionId;
 	private String username;
 	private double price;
@@ -13,30 +10,10 @@ public class BidEvent implements Event{
 
 	}
 
-	@Override
-	public String getId() {
-		return this.id;
-	}
-	
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	@Override
-	public long getTimestamp() {
-		return this.timestamp;
-	}
-	
-	public void setTimestamp(long timestamp) {
-		this.timestamp = timestamp;
-	}
-
-	public Type getType() {
-		return type;
-	}
-
-	public void setType(Type type) {
-		this.type = type;
+	public void setType(String type) {
+		if(type.equals(Type.BID_PLACED.toString()) || type.equals(Type.BID_OVERBID.toString()) || type.equals(Type.BID_WON.toString())) {
+			this.type = type;
+		}
 	}
 
 	public long getAuctionId() {
