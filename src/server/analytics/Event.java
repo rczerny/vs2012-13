@@ -1,6 +1,12 @@
 package server.analytics;
 
-abstract public class Event {
+import java.io.Serializable;
+
+abstract public class Event implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	String id;
 	String type;
 	long timestamp;
