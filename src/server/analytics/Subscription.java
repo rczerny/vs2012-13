@@ -24,15 +24,18 @@ public class Subscription {
 			//remove ( and )
 			if(filterParts[i].charAt(0) == '(') {
 				filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
-
-				if(!filterParts[i].contains("*")) {
-					if(types.contains(filterParts[i])) {
-						filter.add(filterParts[i]);
-					} else {
-						System.out.println("Filter does not exist!");
+				
+				//if last char of pattern is * change to .*
+				if(filterParts[i].charAt(filterParts[i].length()-1) == '*') {
+					filterParts[i]=filterParts[i].substring(0, filterParts[i].length()-1) + ".*";
+				}
+				
+				//for each type of types check if matches with pattern
+				for(String type:types) {
+					if(type.matches(filterParts[i])) {
+						//add type to filter
+						filter.add(type);
 					}
-				} else {
-
 				}
 
 			} else {

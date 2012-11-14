@@ -13,8 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import server.analytics.AnalyticsServerRMI;
-import server.billing.BillingServerRMI;
-import server.billing.BillingServerSecure;
 import tools.PropertiesParser;
 
 public class AnalyticsServerTest {
@@ -69,6 +67,37 @@ public class AnalyticsServerTest {
 			fail("Error obtaining the remote object!");
 		} catch (NotBoundException e) {
 			fail("Specified remote object couldn't be found in registry!");
+		}
+	}
+	
+	@Test
+	public void testValidSubscribe() {
+		assertNotNull(reg);
+		String a = "Created subscription with ID 1 for events using filter (USER_*)|(BID_WON)";
+		try {
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+			String test = as.subcribe("(USER_*)|(BID_WON)");
+			assertEquals(test, a);
+		} catch (RemoteException e) {
+			fail("Remote Error executing subscribe function!");
+		} catch (NotBoundException e) {
+			fail("Remote object couldn't be found!");
+		}
+		
+	}
+	
+	@Test
+	public void testInvalidSubscripe() {
+		assertNotNull(reg);
+		String a = "Creating subscription failed!";
+		try {
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+			String test = as.subcribe("(USER_WON");
+			assertEquals(test, a);
+		} catch (RemoteException e) {
+			fail("Remote Error executing subscribe function!");
+		} catch (NotBoundException e) {
+			fail("Remote object couldn't be found!");
 		}
 	}
 }

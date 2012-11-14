@@ -2,6 +2,7 @@ package server.analytics;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 /**
  * Interface for ensuring RMI methods important for the analytics server.

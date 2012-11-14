@@ -1,9 +1,7 @@
 package server.analytics;
 
 import java.io.FileNotFoundException;
-import java.net.MalformedURLException;
 import java.rmi.AccessException;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -20,7 +18,10 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	@Override
 	public String subcribe(String filter) throws RemoteException {
 		Subscription sub = new Subscription(highestSubscriptionId, filter);
-		subscriptions.add(sub);
+
+		if(!sub.filter.isEmpty()) {
+			subscriptions.add(sub);
+		}
 
 		int id = highestSubscriptionId;
 
