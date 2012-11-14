@@ -1,14 +1,19 @@
 package test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.FileNotFoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+
 import org.junit.Before;
 import org.junit.Test;
 
+import server.billing.AuctionCharging;
+import server.billing.Bill;
 import server.billing.BillingServerRMI;
 import server.billing.BillingServerSecure;
 import tools.PropertiesParser;
@@ -104,34 +109,56 @@ public class BillingServerSecureTest
 		try {
 			bss.createPriceStep(3.5, 4.5, 6, 2);
 		} catch (RemoteException e) {
-			System.out.println("First");
 			exceptions++;
 		}
 		try {
 			bss.createPriceStep(2.5, 3.5, 6, 2);
 		} catch (RemoteException e) {
 			exceptions++;
-			System.out.println("Second");
 		}
 		try {
 			bss.createPriceStep(3.5, 5.5, 6, 2);
 		} catch (RemoteException e) {
 			exceptions++;
-			System.out.println("Third");
 		}
 		try {
 			bss.createPriceStep(4.3, 4.8, 6, 2);
 		} catch (RemoteException e) {
-			System.out.println("Fourth");
 			exceptions++;
 		}
 		try {
 			bss.createPriceStep(3, 4, 6, 2); // shouldn't throw an exception
 		} catch (RemoteException e) {
-			System.out.println("Fifth");
 			exceptions++;
 		}
 		assertEquals(4, exceptions);
+	}
+	
+	@Test
+	public void createPricestepInfinite() {
+		int exceptions = 0;
+		try {
+			bss.createPriceStep(0, 10, 1, 1);
+			bss.createPriceStep(20, 0, 1, 1);
+		} catch (RemoteException e) {
+			fail("Initial creation of initial price step failed!");
+		}
+		try {
+			bss.createPriceStep(10, 23, 1, 1);
+		} catch (RemoteException e) {
+			exceptions++;
+		}
+		try {
+			bss.createPriceStep(21, 23, 1, 1);
+		} catch (RemoteException e) {
+			exceptions++;
+		}
+		try {
+			bss.createPriceStep(13, 0, 1, 1);
+		} catch (RemoteException e) {
+			exceptions++;
+		}
+		assertEquals(3, exceptions);
 	}
 
 	@Test
@@ -150,7 +177,120 @@ public class BillingServerSecureTest
 		bss.deletePriceStep(7, 8);
 	}
 
-	//TODO: Test case where there is no PriceStep for this price
+	@Test
+	public void billAuctionNoPriceStep() {
+		try {
+			bss.billAuction("peter", 1, 23.5);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		Bill bill = null;
+		try {
+			bill = bss.getBill("peter");
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		long auctionID = 0;
+		double strikePrice = 0;
+		double fixedFee = 0;
+		double variableFee = 0;
+		for (AuctionCharging ac : bill.getAuctionChargings()) {
+			auctionID = ac.getAuctionId();
+			fixedFee = ac.getFixedFee();
+			variableFee = ac.getVariableFee();
+		}
+		assertEquals(1, auctionID);
+		assertEquals(23.5, strikePrice, 0.0001);
+		assertEquals(1, fixedFee, 0.0001);
+		assertEquals(0.3525, variableFee, 0.0001);
+	}
+	
+	@Test
+	public void billAuctionNoMatchingPriceStepDefaultToLowerPriceStep() {
+		try {
+			bss.createPriceStep(5, 6, 5, 1.5);
+			bss.billAuction("peter", 1, 23.5);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		Bill bill = null;
+		try {
+			bill = bss.getBill("peter");
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		long auctionID = 0;
+		double strikePrice = 0;
+		double fixedFee = 0;
+		double variableFee = 0;
+		for (AuctionCharging ac : bill.getAuctionChargings()) {
+			auctionID = ac.getAuctionId();
+			fixedFee = ac.getFixedFee();
+			variableFee = ac.getVariableFee();
+		}
+		assertEquals(1, auctionID);
+		assertEquals(23.5, strikePrice, 0.0001);
+		assertEquals(5, fixedFee, 0.0001);
+		assertEquals(0.3525, variableFee, 0.0001);
+	}
+	
+	@Test
+	public void billAuctionNoMatchingLowerPriceStep() {
+		try {
+			bss.createPriceStep(50, 60, 5, 1.5);
+			bss.billAuction("peter", 1, 23.5);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		Bill bill = null;
+		try {
+			bill = bss.getBill("peter");
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		long auctionID = 0;
+		double strikePrice = 0;
+		double fixedFee = 0;
+		double variableFee = 0;
+		for (AuctionCharging ac : bill.getAuctionChargings()) {
+			auctionID = ac.getAuctionId();
+			fixedFee = ac.getFixedFee();
+			variableFee = ac.getVariableFee();
+		}
+		assertEquals(1, auctionID);
+		assertEquals(23.5, strikePrice, 0.0001);
+		assertEquals(1, fixedFee, 0.0001);
+		assertEquals(0.3525, variableFee, 0.0001);
+	}
+	
+	@Test
+	public void billAuctionNoBid() {
+		try {
+			bss.billAuction("peter", 1, 0);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		Bill bill = null;
+		try {
+			bill = bss.getBill("peter");
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		long auctionID = 0;
+		double strikePrice = 0;
+		double fixedFee = 0;
+		double variableFee = 0;
+		for (AuctionCharging ac : bill.getAuctionChargings()) {
+			auctionID = ac.getAuctionId();
+			fixedFee = ac.getFixedFee();
+			variableFee = ac.getVariableFee();
+		}
+		assertEquals(1, auctionID);
+		assertEquals(0, strikePrice, 0.0001);
+		assertEquals(1, fixedFee, 0.0001);
+		assertEquals(0, variableFee, 0.0001);
+	}
+	
 	@Test
 	public void billAuction() {
 		try {
@@ -159,12 +299,24 @@ public class BillingServerSecureTest
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
-		String bill = "";
+		Bill bill = null;
 		try {
-			bill = bss.getBill("peter").toString();
+			bill = bss.getBill("peter");
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
-		assertEquals(bill, "auction_ID	strike_price	fee_fixed	fee_variable	fee_total\n1 23.5 5 0.92 5.92");
+		long auctionID = 0;
+		double strikePrice = 0;
+		double fixedFee = 0;
+		double variableFee = 0;
+		for (AuctionCharging ac : bill.getAuctionChargings()) {
+			auctionID = ac.getAuctionId();
+			fixedFee = ac.getFixedFee();
+			variableFee = ac.getVariableFee();
+		}
+		assertEquals(1, auctionID);
+		assertEquals(23.5, strikePrice, 0.0001);
+		assertEquals(5, fixedFee, 0.0001);
+		assertEquals(0.94, variableFee, 0.0001);
 	}
 }
