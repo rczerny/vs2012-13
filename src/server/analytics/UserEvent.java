@@ -1,6 +1,11 @@
 package server.analytics;
 
 public class UserEvent extends Event{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	private enum Type {USER_LOGIN, USER_LOGOUT, USER_DISCONNECTED;}
 	private String username;
 
@@ -21,5 +26,24 @@ public class UserEvent extends Event{
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+	
+	public String toString() {
+		String prefix = super.toString();
+		String suffix ="";
+		
+		if(this.type.equals("USER_LOGIN")) {
+			suffix = "user " + username + " logged in";
+		}
+		
+		if(this.type.equals("USER_LOGOUT")) {
+			suffix = "user " + username + " logged out";
+		}
+		
+		if(this.type.equals("USER_DISCONNECTED")) {
+			suffix = "user " + username + " disconnected";
+		}
+		
+		return prefix + suffix;
 	}
 }

@@ -31,4 +31,8 @@ abstract public class Event implements Serializable{
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
 	}
+	
+	public String toString(){
+		return type + ": " + timestamp + " - ";
+	}
 }

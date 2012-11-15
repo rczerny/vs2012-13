@@ -6,21 +6,18 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-
 import tools.PropertiesParser;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
 
 	int highestSubscriptionId = 1;
-	ArrayList<Subscription> subscriptions = new ArrayList<Subscription>();
 
 	@Override
-	public String subcribe(String filter) throws RemoteException {
+	public String subscribe(Client c, String filter) throws RemoteException {
 		Subscription sub = new Subscription(highestSubscriptionId, filter);
 
 		if(!sub.filter.isEmpty()) {
-			subscriptions.add(sub);
+			c.subscriptions.put(highestSubscriptionId, sub);
 		}
 
 		int id = highestSubscriptionId;
@@ -28,6 +25,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		if(sub.filter.isEmpty()) {
 			return "Creating subscription failed!";
 		}
+		
 		highestSubscriptionId++;
 		return "Created subscription with ID " + id + " for events using filter " + filter;
 	}
@@ -39,9 +37,12 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	}
 
 	@Override
-	public void unsubcribe(int id) throws RemoteException {
-		// TODO Auto-generated method stub
-
+	public String unsubscribe(Client c, int id) throws RemoteException {
+		if(c.getSubscriptions().containsKey(id)) {
+			c.getSubscriptions().remove(id);
+			return "subscription " + id + " terminated";
+		} 
+		return "unsubscribe failed";
 	}
 
 	/**

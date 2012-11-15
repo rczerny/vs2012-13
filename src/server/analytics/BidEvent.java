@@ -1,6 +1,11 @@
 package server.analytics;
 
 public class BidEvent extends Event{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	private enum Type {BID_PLACED, BID_OVERBID, BID_WON;}
 	private long auctionId;
 	private String username;
@@ -38,5 +43,24 @@ public class BidEvent extends Event{
 
 	public void setPrice(double price) {
 		this.price = price;
+	}
+	
+	public String toString() {
+		String prefix = super.toString();
+		String suffix ="";
+		
+		if(this.type.equals("BID_PLACED")) {
+			suffix = "user " + username + " placed bid " + price + " on auction " + auctionId;
+		}
+		
+		if(this.type.equals("BID_OVERBID")) {
+			suffix = "OVERBIDt";
+		}
+		
+		if(this.type.equals("BID_WON")) {
+			suffix = "WON";
+		}
+		
+		return prefix + suffix;
 	}
 }
