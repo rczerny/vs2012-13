@@ -10,12 +10,12 @@ public class AuctionCharging implements Serializable {
 	private double fixedFee = 0;
 	private double variableFee = 0;
 	
-	public AuctionCharging(long auctionID, double strikePrice, double fixedFee, double variableFee) {
+	public AuctionCharging(long auctionID, double strikePrice, double fixedFee, double variablePricePercent) {
 		super();
 		this.auctionID = auctionID;
 		this.strikePrice = strikePrice;
 		this.fixedFee = fixedFee;
-		this.variableFee = variableFee*strikePrice;
+		this.variableFee = (variablePricePercent/100)*strikePrice;
 	}
 	
 	public long getAuctionId() {

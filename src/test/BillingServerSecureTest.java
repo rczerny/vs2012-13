@@ -41,7 +41,6 @@ public class BillingServerSecureTest
 		} catch (RemoteException e) {
 			fail("Registry couln't be found!");
 		} catch (NotBoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -133,7 +132,7 @@ public class BillingServerSecureTest
 		}
 		assertEquals(4, exceptions);
 	}
-	
+
 	@Test
 	public void createPricestepInfinite() {
 		int exceptions = 0;
@@ -180,6 +179,7 @@ public class BillingServerSecureTest
 	@Test
 	public void billAuctionNoPriceStep() {
 		try {
+			bss.getPriceSteps().deleteAll();
 			bss.billAuction("peter", 1, 23.5);
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -195,19 +195,27 @@ public class BillingServerSecureTest
 		double fixedFee = 0;
 		double variableFee = 0;
 		for (AuctionCharging ac : bill.getAuctionChargings()) {
+			System.out.println("for: variableFee" + ac.getVariableFee());
 			auctionID = ac.getAuctionId();
 			fixedFee = ac.getFixedFee();
 			variableFee = ac.getVariableFee();
+			strikePrice = ac.getStrikePrice();
+			System.out.println("billAuctionNoPriceStep");
 		}
+		System.out.println("auctionID: " + auctionID + " should be 1");
+		System.out.println("strikePrice: " + strikePrice + " should be 23.5");
+		System.out.println("fixedFee: " + fixedFee + " should be 1");
+		System.out.println("variableFee: " + variableFee + " should be 0.3525");
 		assertEquals(1, auctionID);
 		assertEquals(23.5, strikePrice, 0.0001);
 		assertEquals(1, fixedFee, 0.0001);
-		assertEquals(0.3525, variableFee, 0.0001);
+		assertEquals(0, variableFee, 0.0001);
 	}
-	
+
 	@Test
 	public void billAuctionNoMatchingPriceStepDefaultToLowerPriceStep() {
 		try {
+			bss.getPriceSteps().deleteAll();
 			bss.createPriceStep(5, 6, 5, 1.5);
 			bss.billAuction("peter", 1, 23.5);
 		} catch (RemoteException e) {
@@ -227,16 +235,23 @@ public class BillingServerSecureTest
 			auctionID = ac.getAuctionId();
 			fixedFee = ac.getFixedFee();
 			variableFee = ac.getVariableFee();
+			strikePrice = ac.getStrikePrice();
+			System.out.println("billAuctionNoMatchingPriceStepDefaultToLower");
 		}
+		System.out.println("auctionID: " + auctionID + " should be 1");
+		System.out.println("strikePrice: " + strikePrice + " should be 23.5");
+		System.out.println("fixedFee: " + fixedFee + " should be 5");
+		System.out.println("variableFee: " + variableFee + " should be 0.3525");
 		assertEquals(1, auctionID);
 		assertEquals(23.5, strikePrice, 0.0001);
 		assertEquals(5, fixedFee, 0.0001);
 		assertEquals(0.3525, variableFee, 0.0001);
 	}
-	
+
 	@Test
 	public void billAuctionNoMatchingLowerPriceStep() {
 		try {
+			bss.getPriceSteps().deleteAll();
 			bss.createPriceStep(50, 60, 5, 1.5);
 			bss.billAuction("peter", 1, 23.5);
 		} catch (RemoteException e) {
@@ -256,16 +271,23 @@ public class BillingServerSecureTest
 			auctionID = ac.getAuctionId();
 			fixedFee = ac.getFixedFee();
 			variableFee = ac.getVariableFee();
+			strikePrice = ac.getStrikePrice();
 		}
+		System.out.println("billAuctionNoMatchingLowerPriceStep");
+		System.out.println("auctionID: " + auctionID + " should be 1");
+		System.out.println("strikePrice: " + strikePrice + " should be 23.5");
+		System.out.println("fixedFee: " + fixedFee + " should be 1");
+		System.out.println("variableFee: " + variableFee + " should be 0.3525");
 		assertEquals(1, auctionID);
 		assertEquals(23.5, strikePrice, 0.0001);
 		assertEquals(1, fixedFee, 0.0001);
-		assertEquals(0.3525, variableFee, 0.0001);
+		assertEquals(0, variableFee, 0.0001);
 	}
-	
+
 	@Test
 	public void billAuctionNoBid() {
 		try {
+			bss.getPriceSteps().deleteAll();
 			bss.billAuction("peter", 1, 0);
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -284,16 +306,23 @@ public class BillingServerSecureTest
 			auctionID = ac.getAuctionId();
 			fixedFee = ac.getFixedFee();
 			variableFee = ac.getVariableFee();
+			strikePrice = ac.getStrikePrice();
+			System.out.println("billAuctionNoBid");
 		}
+		System.out.println("auctionID: " + auctionID + " should be 1");
+		System.out.println("strikePrice: " + strikePrice + " should be 0");
+		System.out.println("fixedFee: " + fixedFee + " should be 1");
+		System.out.println("variableFee: " + variableFee + " should be 0");
 		assertEquals(1, auctionID);
 		assertEquals(0, strikePrice, 0.0001);
 		assertEquals(1, fixedFee, 0.0001);
 		assertEquals(0, variableFee, 0.0001);
 	}
-	
+
 	@Test
 	public void billAuction() {
 		try {
+			bss.getPriceSteps().deleteAll();
 			bss.createPriceStep(10, 50, 5, 4);
 			bss.billAuction("peter", 1, 23.5);
 		} catch (RemoteException e) {
@@ -313,7 +342,13 @@ public class BillingServerSecureTest
 			auctionID = ac.getAuctionId();
 			fixedFee = ac.getFixedFee();
 			variableFee = ac.getVariableFee();
+			strikePrice = ac.getStrikePrice();
+			System.out.println("billAuction");
 		}
+		System.out.println("auctionID: " + auctionID + " should be 1");
+		System.out.println("strikePrice: " + strikePrice + " should be 23.5");
+		System.out.println("fixedFee: " + fixedFee + " should be 5");
+		System.out.println("variableFee: " + variableFee + " should be 0.94");
 		assertEquals(1, auctionID);
 		assertEquals(23.5, strikePrice, 0.0001);
 		assertEquals(5, fixedFee, 0.0001);

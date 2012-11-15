@@ -34,6 +34,10 @@ public class PriceSteps implements Serializable
 		priceSteps.remove(p);
 	}
 	
+	public void deleteAll() {
+		priceSteps.clear();
+	}
+	
 	public PriceStep getPriceStepForPrice(double price) {
 		PriceStep ps = new PriceStep(0, 0, 1, 0);
 		for (PriceStep p : priceSteps) {
