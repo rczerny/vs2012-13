@@ -1,14 +1,26 @@
 package server.auction;
 
+import static org.junit.Assert.fail;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.text.DecimalFormat;
 import java.util.Date;
+
+import server.analytics.AnalyticsServerRMI;
+import server.analytics.AuctionEvent;
+import server.analytics.BidEvent;
+import server.analytics.UserEvent;
+import tools.PropertiesParser;
 
 public class CommandHandler implements Runnable
 {
@@ -19,6 +31,11 @@ public class CommandHandler implements Runnable
 	private AuctionServer main = null;
 	private boolean localShutdown = false;
 
+	//RMI Analytics Server
+	private AnalyticsServerRMI as = null;
+	private PropertiesParser ps = null;
+	private Registry reg = null;
+
 	public CommandHandler(Socket s, AuctionServer main) {
 		this.sock = s;
 		this.main = main;
@@ -27,6 +44,22 @@ public class CommandHandler implements Runnable
 			bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 		} catch (IOException e) {
 			System.err.println("Error when opening I/O streams!");
+			e.printStackTrace();
+		}
+
+		try {
+			ps = new PropertiesParser("registry.properties");
+			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
+			String host = ps.getProperty("registry.host");
+			reg = LocateRegistry.getRegistry(host, portNr);
+		} catch (FileNotFoundException e) {
+			System.out.println("properties file not found!");
+			e.printStackTrace();
+		} catch (NumberFormatException e) {
+			System.out.println("Port non-numeric!");
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			System.out.println("Registry couln't be found!");
 			e.printStackTrace();
 		}
 	}
@@ -94,11 +127,21 @@ public class CommandHandler implements Runnable
 												u.getDueNotifications().remove(message);
 											}
 										}
-										*/
+										 */
 									}
 									bw.write("Successfully logged in as " + u.getUsername());
 									bw.newLine();
 									bw.flush();
+
+									try{
+										UserEvent ue = new UserEvent();
+										ue.setType("USER_LOGIN");
+										ue.setUsername(u.getUsername());
+										as.processEvent(ue);
+									} catch (RemoteException e) {
+										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+										e.printStackTrace();
+									}
 								}
 							}
 						}
@@ -118,6 +161,16 @@ public class CommandHandler implements Runnable
 						bw.write("Successfully logged out as " + username);
 						bw.newLine();
 						bw.flush();
+
+						try{
+							UserEvent ue = new UserEvent();
+							ue.setType("USER_LOGOUT");
+							ue.setUsername(u.getUsername());
+							as.processEvent(ue);
+						} catch (RemoteException e) {
+							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+							e.printStackTrace();
+						}
 					}
 					////////////////////////////////////////////
 					// !create - Client creates an auction
@@ -145,6 +198,16 @@ public class CommandHandler implements Runnable
 										+ date.toString() + ".");
 								bw.newLine();
 								bw.flush();
+
+								try{
+									AuctionEvent ae = new AuctionEvent();
+									ae.setType("AUCTION_STARTED");
+									ae.setAuctionID(a.getId());
+									as.processEvent(ae);
+								} catch (RemoteException e) {
+									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+									e.printStackTrace();
+								}
 							}
 						}
 					} else {
@@ -165,8 +228,8 @@ public class CommandHandler implements Runnable
 						double amount = Double.parseDouble(commandParts[2]);
 						DecimalFormat f = new DecimalFormat("#0.00");
 						String amount_string = f.format(amount);
-				        amount = Double.parseDouble(amount_string); 
-				        Auction a = main.getAuction(id);
+						amount = Double.parseDouble(amount_string); 
+						Auction a = main.getAuction(id);
 						if (a == null) {
 							bw.write("Error! Auction not found!");
 							bw.newLine();
@@ -179,12 +242,37 @@ public class CommandHandler implements Runnable
 								if (a.getHighestBidder() != null && !a.getHighestBidder().getUsername().equals(u.getUsername())) {
 									main.sendNotification(a.getHighestBidder(), "!new-bid " + a.getDescription());
 								}
-								*/
+								 */
+								try {
+									BidEvent be = new BidEvent();
+									be.setType("BID_OVERBID");
+									be.setUsername(a.getHighestBidder().getUsername());
+									be.setAuctionId(a.getId());
+									be.setPrice(amount);
+									as.processEvent(be);
+								} catch (RemoteException e) {
+									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+									e.printStackTrace();
+								}
+
 								a.setHighestBid(amount);
 								a.setHighestBidder(u);
 								bw.write("You successfully bid with " + amount_string + " on '" + a.getDescription() + "'.");
 								bw.newLine();
 								bw.flush();
+
+								try{
+										BidEvent be = new BidEvent();
+										be.setType("BID_PLACED");
+										be.setUsername(u.getUsername());
+										be.setAuctionId(a.getId());
+										be.setPrice(amount);
+										as.processEvent(be);
+								} catch (RemoteException e) {
+									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+									e.printStackTrace();
+								}
+
 							} else {
 								bw.write("You unsuccessfully bid with " + amount_string + " on '" + a.getDescription() + "'. ");
 								bw.write("Current highest bid is " + f.format(a.getHighestBid()));
