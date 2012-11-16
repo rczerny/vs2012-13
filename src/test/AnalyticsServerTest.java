@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import server.analytics.AnalyticsServerRMI;
-import server.analytics.Client;
 import tools.PropertiesParser;
 
 public class AnalyticsServerTest {
@@ -21,12 +20,9 @@ public class AnalyticsServerTest {
 	private AnalyticsServerRMI as = null;
 	private PropertiesParser ps = null;
 	private Registry reg = null;
-	private Client c = null;
 
 	@Before
 	public void setUp() {
-
-		c = new Client("TestClient1");
 
 		try {
 			ps = new PropertiesParser("registry.properties");
@@ -81,7 +77,7 @@ public class AnalyticsServerTest {
 		String a = "Created subscription with ID 1 for events using filter (USER_*)|(BID_WON)";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			String test = as.subscribe(c, "(USER_*)|(BID_WON)");
+			String test = as.subscribe("test", "(USER_*)|(BID_WON)");
 			assertEquals(test, a);
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
@@ -97,7 +93,7 @@ public class AnalyticsServerTest {
 		String a = "Creating subscription failed!";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			String test = as.subscribe(c, "(USER_WON");
+			String test = as.subscribe("test", "(USER_WON");
 			assertEquals(test, a);
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
@@ -113,7 +109,7 @@ public class AnalyticsServerTest {
 		String test = "";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			as.subscribe(c, "(USER_*)|(BID_WON)");
+			as.subscribe("test", "(USER_*)|(BID_WON)");
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -121,7 +117,7 @@ public class AnalyticsServerTest {
 		}
 		
 		try {
-			test = as.unsubscribe(c, 1);
+			test = as.unsubscribe("test", 1);
 		} catch (RemoteException e) {
 			fail("Remote Error executing unsubscribe function!");
 		}
@@ -136,7 +132,7 @@ public class AnalyticsServerTest {
 		String test = "";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			as.subscribe(c, "(USER_*)|(BID_WON)");
+			as.subscribe("test", "(USER_*)|(BID_WON)");
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -144,7 +140,7 @@ public class AnalyticsServerTest {
 		}
 		
 		try {
-			test = as.unsubscribe(c, 100);
+			test = as.unsubscribe("test", 100);
 		} catch (RemoteException e) {
 			fail("Remote Error executing unsubscribe function!");
 		}

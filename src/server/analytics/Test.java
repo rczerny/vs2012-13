@@ -11,23 +11,22 @@ public class Test {
 		Test t = new Test();
 		t.test1();
 		t.test2();
-		
+		t.test3();
 	}
 
 	public void test1() {
-		Client c = new Client("hallo");
 		AnalyticsServerRMI as = new AnalyticsServer();
 		
 		String filter = "(USER_*)|(BID_*)|(AUCTION_STARTED)";
 		try {
-			System.out.println(as.subscribe(c, filter));
+			System.out.println(as.subscribe("test", filter));
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		try {
-			System.out.println(as.unsubscribe(c, 2));
+			System.out.println(as.unsubscribe("test", 2));
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -49,5 +48,9 @@ public class Test {
 		
 		ue.setType("Halo");
 		System.out.println(ue.toString());
+	}
+	
+	public void test3() {
+		
 	}
 }
