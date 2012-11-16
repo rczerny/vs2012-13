@@ -53,7 +53,48 @@ public class ManagementClient
 				command = command.trim(); // remove leading and trailing whitespaces
 				commandParts = command.split("\\s+");
 				if (commandParts[0].equals("!login")) {
-					
+					if (commandParts.length < 3) {
+						System.err.println("Invalid command! Must be !login <username> <password>");
+					} else {
+						bss = (BillingServerSecure) bs.login(commandParts[1], commandParts[2]);
+						if (bss == null) {
+							System.err.println("Login failed!");
+						} else {
+							System.out.println(commandParts[1] + " successfully logged in");
+						}
+					}
+				} else if (commandParts[0].equals("!steps")) {
+					if (bss == null) {
+						System.err.println("You need to login first!");
+					} else {
+						PriceSteps
+					}
+				} else if (commandParts[0].equals("!addStep")) {
+					if (bss == null) {
+						System.err.println("You need to login first!");
+					} else {
+						
+					}
+				} else if (commandParts[0].equals("!removeStep")) {
+					if (bss == null) {
+						System.err.println("You need to login first!");
+					} else {
+						
+					}
+				} else if (commandParts[0].equals("!bill")) {
+					if (bss == null) {
+						System.err.println("You need to login first!");
+					} else {
+						
+					}
+				} else if (commandParts[0].equals("!logout")) {
+					if (bss == null) {
+						System.err.println("You need to login first!");
+					} else {
+						
+					}
+				} else {
+					System.err.println("Unknown command!");
 				}
 			}
 		} catch (IOException e) {
