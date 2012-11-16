@@ -6,18 +6,26 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+
 import tools.PropertiesParser;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
 
+	HashMap<String, Client> clients = new HashMap<String, Client>();
 	int highestSubscriptionId = 1;
 
 	@Override
-	public String subscribe(Client c, String filter) throws RemoteException {
+	public String subscribe(String c, String filter) throws RemoteException {
 		Subscription sub = new Subscription(highestSubscriptionId, filter);
 
+		Client client = new Client(c);
+		if(!clients.containsKey(c)) {
+			clients.put(c, client);
+		}
+
 		if(!sub.filter.isEmpty()) {
-			c.subscriptions.put(highestSubscriptionId, sub);
+			client.subscriptions.put(highestSubscriptionId, sub);
 		}
 
 		int id = highestSubscriptionId;
@@ -25,23 +33,25 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		if(sub.filter.isEmpty()) {
 			return "Creating subscription failed!";
 		}
-		
+
 		highestSubscriptionId++;
 		return "Created subscription with ID " + id + " for events using filter " + filter;
 	}
 
 	@Override
 	public void processEvent(Event e) throws RemoteException {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public String unsubscribe(Client c, int id) throws RemoteException {
-		if(c.getSubscriptions().containsKey(id)) {
-			c.getSubscriptions().remove(id);
-			return "subscription " + id + " terminated";
-		} 
+	public String unsubscribe(String c, int id) throws RemoteException {
+		if(clients.containsKey(c)) {
+			Client client = clients.get(c);
+					if(client.getSubscriptions().containsKey(id)) {
+						client.getSubscriptions().remove(id);
+						return "subscription " + id + " terminated";
+					} 
+		}
 		return "unsubscribe failed";
 	}
 
@@ -87,17 +97,5 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				e.printStackTrace();
 			}
 		}
-
-		/*AnalyticsServer as = new AnalyticsServer();
-		try {
-			System.out.println(as.subcribe("(USER_*)|(BID_WON)"));
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		try {
-			System.out.println(as.subcribe("(USER_*)"));
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}*/
 	}
 }

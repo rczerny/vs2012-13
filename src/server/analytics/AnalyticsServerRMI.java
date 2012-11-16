@@ -8,7 +8,7 @@ import java.rmi.RemoteException;
  *
  */
 public interface AnalyticsServerRMI extends Remote{
-	String subscribe(Client client, String filter) throws RemoteException;
+	String subscribe(String client, String filter) throws RemoteException;
 	void processEvent(Event e) throws RemoteException;
-	String unsubscribe(Client client, int id) throws RemoteException;
+	String unsubscribe(String client, int id) throws RemoteException;
 }
