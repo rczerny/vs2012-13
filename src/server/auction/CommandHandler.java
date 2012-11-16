@@ -85,12 +85,16 @@ public class CommandHandler implements Runnable
 										u.setUdpPort(udpPort);
 										u.setLoggedIn(true);
 										u.setSocket(sock);
+										/*********************
+										 * no UDP in Lab 2
+										 *********************
 										if (u.getDueNotifications() != null && u.getDueNotifications().size() > 0) { // any notifications due?
 											for (String message : u.getDueNotifications()) {
 												main.sendNotification(u, message);
 												u.getDueNotifications().remove(message);
 											}
 										}
+										*/
 									}
 									bw.write("Successfully logged in as " + u.getUsername());
 									bw.newLine();
@@ -169,9 +173,13 @@ public class CommandHandler implements Runnable
 							bw.flush();
 						} else {
 							if (amount > a.getHighestBid()) {
+								/*********************
+								 * no UDP in Lab 2
+								 *********************
 								if (a.getHighestBidder() != null && !a.getHighestBidder().getUsername().equals(u.getUsername())) {
 									main.sendNotification(a.getHighestBidder(), "!new-bid " + a.getDescription());
 								}
+								*/
 								a.setHighestBid(amount);
 								a.setHighestBidder(u);
 								bw.write("You successfully bid with " + amount_string + " on '" + a.getDescription() + "'.");

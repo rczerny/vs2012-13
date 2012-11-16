@@ -112,6 +112,10 @@ public class AuctionServer
 	}
 
 	public void sendNotification(User user, String message) {
+		;
+		/**********************
+		 * no UDP functionality in Lab 2
+		 **********************
 		if (user.isLoggedIn()) {
 			DatagramSocket datagramSocket;
 			try {
@@ -131,6 +135,7 @@ public class AuctionServer
 		} else {
 			user.getDueNotifications().add(message);
 		}
+		*/
 	}
 
 	/**

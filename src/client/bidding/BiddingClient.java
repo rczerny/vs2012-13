@@ -34,7 +34,10 @@ public class BiddingClient implements Runnable
 	}
 
 	public void run() {
-		UDPListener udpListener = null;
+		/**********************
+		 * No UDP in Lab 2
+		 **********************
+		UDPListener udpListener = null; 
 		try {
 			udpListener = new UDPListener(udpPort, username);
 		} catch (SocketException e) {
@@ -42,6 +45,7 @@ public class BiddingClient implements Runnable
 			return;
 		}
 		pool.execute(udpListener);
+		*/
 		BufferedReader br = null;
 		BufferedWriter bw = null;
 		BufferedReader keys = null;
@@ -79,7 +83,7 @@ public class BiddingClient implements Runnable
 					if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
 						username = input.trim().split("\\s+")[1];
 						PROMPT =  username + PROMPT;
-						udpListener.setUsername(username);
+						//udpListener.setUsername(username);
 					}
 					if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
 						username = "";
@@ -99,13 +103,13 @@ public class BiddingClient implements Runnable
 		}
 		try {
 			sock.close();
-			udpListener.setShutdown(true);
+			//udpListener.setShutdown(true);
 			pool.shutdown();
 		} catch (IOException e) {
 			System.err.println("Couldn't close socket!");
 			e.printStackTrace();
 		} catch (NullPointerException e) {
-			udpListener.setShutdown(true);
+			//udpListener.setShutdown(true);
 			pool.shutdown();
 		}
 	}

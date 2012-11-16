@@ -39,7 +39,7 @@ public class BillingServerSecureTest
 		} catch (NumberFormatException e) {
 			fail("Port non-numeric!");
 		} catch (RemoteException e) {
-			fail("Registry couln't be found!");
+			fail("Registry couldn't be found!");
 		} catch (NotBoundException e) {
 			e.printStackTrace();
 		}
@@ -132,7 +132,7 @@ public class BillingServerSecureTest
 		}
 		assertEquals(4, exceptions);
 	}
-
+	
 	@Test
 	public void createPricestepInfinite() {
 		int exceptions = 0;
@@ -354,4 +354,5 @@ public class BillingServerSecureTest
 		assertEquals(5, fixedFee, 0.0001);
 		assertEquals(0.94, variableFee, 0.0001);
 	}
+	
 }

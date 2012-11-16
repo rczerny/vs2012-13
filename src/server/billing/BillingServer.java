@@ -2,18 +2,46 @@ package server.billing;
 
 import java.io.FileNotFoundException;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.rmi.AccessException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.Unreferenced;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import tools.PropertiesParser;
 
-public class BillingServer implements BillingServerRMI
+public class BillingServer implements BillingServerRMI, Unreferenced
 {
+	private String bindingName;
+	private Registry registry;
+	private BillingServerSecure billingServerSecure = null;
+	
+	public void setBindingName(String bindingName) {
+		this.bindingName = bindingName;
+	}
+	
+	public String getBindingName() {
+		return bindingName;
+	}
+	
+	public Registry getRegistry() {
+		return registry;
+	}
+
+	public void setRegistry(Registry registry) {
+		this.registry = registry;
+	}
+
+	public void unreferenced() {
+		shutdown();
+	}
+
 	public BillingServerSecure login(String username, String password) {
 		BillingServerSecure result = null;
 		try {
@@ -24,6 +52,7 @@ public class BillingServer implements BillingServerRMI
 				BillingServerSecure bss = new BillingServerSecureImpl();
 				try {
 					result = (BillingServerSecure) UnicastRemoteObject.exportObject(bss, 0);
+					billingServerSecure = bss;
 				} catch (RemoteException e) {
 					System.err.println("Error exporting the remote object!");
 					e.printStackTrace();
@@ -38,6 +67,37 @@ public class BillingServer implements BillingServerRMI
 		}
 		
 		return result;
+	}
+	
+	public void shutdown() {
+		PropertiesParser ps = null;
+		try {
+			ps = new PropertiesParser("registry.properties");
+		} catch (FileNotFoundException e1) {
+			System.err.println("Error: Properties file not found!");
+		}
+		String host = ps.getProperty("registry.host");
+		try {
+			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
+			Naming.unbind("//" + host + ":" + portNr + "/" + bindingName);
+			if (billingServerSecure != null) {
+				((BillingServerSecureImpl) billingServerSecure).shutdown();
+			}
+			UnicastRemoteObject.unexportObject(this, true);
+			UnicastRemoteObject.unexportObject(registry, true);
+		} catch (RemoteException e) {
+			System.err.println("Error: Couldn't unbind from registry!");
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			System.err.println("Error: Couldn't find registry!");
+			e.printStackTrace();
+		} catch (NotBoundException e) {
+			System.err.println("Error: Registry not bound!");
+			e.printStackTrace();
+		} catch (NumberFormatException e) {
+			System.err.println("Port non-numeric!");
+		}
+		System.exit(0);
 	}
 
 	public static void main(String[] args) {
@@ -61,6 +121,10 @@ public class BillingServer implements BillingServerRMI
 			}
 			BillingServerRMI bs = new BillingServer();
 			BillingServerRMI rbs = null;
+			((BillingServer) bs).setBindingName(bindingName);
+			((BillingServer) bs).setRegistry(registry);
+			ConsoleListener cs = new ConsoleListener(bs);
+			new Thread(cs).start();
 			try {
 				rbs = (BillingServerRMI) UnicastRemoteObject.exportObject(bs, 0);
 			} catch (RemoteException e) {

@@ -1,20 +1,36 @@
 package server.billing;
 
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.Unreferenced;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BillingServerSecureImpl implements BillingServerSecure 
+public class BillingServerSecureImpl implements BillingServerSecure, Unreferenced 
 {
 	private PriceSteps s;
 	private ConcurrentHashMap<String, Bill> bills;
-	
+
 	public BillingServerSecureImpl() {
 		s = new PriceSteps();
 		bills = new ConcurrentHashMap<String, Bill>();
 	}
-	
+
 	public PriceSteps getPriceSteps() throws RemoteException {
 		return s;
+	}
+
+	public void unreferenced() {
+		shutdown();
+	}
+
+	public void shutdown() {
+		try {
+			UnicastRemoteObject.unexportObject(this, true);
+		} catch (NoSuchObjectException e) {
+			System.err.println("Object BillingServerSecure couldn't be unexported!");
+			e.printStackTrace();
+		}
 	}
 
 	public void createPriceStep(double startPrice, double endPrice,	double fixedPrice, double variablePricePercent) throws RemoteException {
@@ -26,16 +42,16 @@ public class BillingServerSecureImpl implements BillingServerSecure
 					throw new RemoteException("Error: Couldn't create price step! Overlapping steps would occur! Delete conflicting step first!");
 				}
 			}
-			
+
 		}
 		else if (startPrice > endPrice) {
 			throw new RemoteException("Error: Start price mustn't be higher than end price!");
 		} else {
 			for (PriceStep p : s.getPriceSteps()) {
 				if (endPrice > p.getStartPrice() && endPrice <= p.getEndPrice() ||
-					startPrice >= p.getStartPrice() && startPrice < p.getEndPrice() ||
-					startPrice < p.getStartPrice() && endPrice >= p.getEndPrice() ||
-					endPrice > p.getStartPrice() && p.getEndPrice() == 0) {
+						startPrice >= p.getStartPrice() && startPrice < p.getEndPrice() ||
+						startPrice < p.getStartPrice() && endPrice >= p.getEndPrice() ||
+						endPrice > p.getStartPrice() && p.getEndPrice() == 0) {
 					throw new RemoteException("Error: Couldn't create price step! Overlapping steps would occur! Delete conflicting step first!");
 				}
 			}
