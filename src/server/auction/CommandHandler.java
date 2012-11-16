@@ -1,7 +1,5 @@
 package server.auction;
 
-import static org.junit.Assert.fail;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
@@ -10,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -52,6 +51,7 @@ public class CommandHandler implements Runnable
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
 			reg = LocateRegistry.getRegistry(host, portNr);
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
 		} catch (FileNotFoundException e) {
 			System.out.println("properties file not found!");
 			e.printStackTrace();
@@ -60,6 +60,9 @@ public class CommandHandler implements Runnable
 			e.printStackTrace();
 		} catch (RemoteException e) {
 			System.out.println("Registry couln't be found!");
+			e.printStackTrace();
+		} catch (NotBoundException e) {
+			System.out.println("Specified remote object couldn't be found in registry!");
 			e.printStackTrace();
 		}
 	}

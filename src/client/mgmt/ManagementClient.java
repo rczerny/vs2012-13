@@ -5,25 +5,29 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
+import server.analytics.AnalyticsServer;
+import server.analytics.AnalyticsServerRMI;
 import server.billing.BillingServerRMI;
 import server.billing.BillingServerSecure;
 import tools.PropertiesParser;
 
-public class ManagementClient 
-{
+public class ManagementClient extends UnicastRemoteObject implements ManagementClientInterface{
 	private String analyticsBindingName = "";
 	private String billingBindingName = "";
 	private BillingServerRMI bs = null;
 	private BillingServerSecure bss = null;
+	private AnalyticsServerRMI as = null;
 	private PropertiesParser ps = null;
 	private Registry reg = null;
 	private BufferedReader keys = null;
 
-	public ManagementClient(String analyticsBindingName, String billingBindingName) {
+	public ManagementClient(String analyticsBindingName, String billingBindingName) throws RemoteException{		
 		keys = new BufferedReader(new InputStreamReader(System.in));
 		this.analyticsBindingName = analyticsBindingName;
 		this.billingBindingName = billingBindingName;
@@ -32,7 +36,8 @@ public class ManagementClient
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
 			reg = LocateRegistry.getRegistry(host, portNr);
-			bs = (BillingServerRMI) reg.lookup(billingBindingName);
+			//bs = (BillingServerRMI) reg.lookup(billingBindingName);
+			as = (AnalyticsServerRMI) reg.lookup(analyticsBindingName);
 		} catch (FileNotFoundException e) {
 			System.err.println("properties file not found!");
 		} catch (NumberFormatException e) {
@@ -67,7 +72,7 @@ public class ManagementClient
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-						PriceSteps
+						//PriceSteps
 					}
 				} else if (commandParts[0].equals("!addStep")) {
 					if (bss == null) {
@@ -102,14 +107,50 @@ public class ManagementClient
 			e.printStackTrace();
 		}
 	}
+	
+	public String subscribe(String filter) {
+		String answer = "";
+		try {
+		    answer = as.subscribe(this, filter);
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		if(answer.equals("")) {
+			answer = "Failed";
+		}
+		return answer;
+	}
+	
+	public String unsubscribe(int id) {
+		String answer = "";
+		try {
+		    answer = as.unsubscribe(this, id);
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		if(answer.equals("")) {
+			answer = "Failed";
+		}
+		return answer;
+	}
+	
+	@Override
+	public void updateEvents() throws RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
 
 	public static void main(String[] args) {
 		if (args.length != 2) {
 			System.err.println("Invalid arguments!");
 			System.err.println("USAGE: java ManagementClient <AnalyticsBindingname> <BillingBindingName>");
 		} else {
+			try{
 			ManagementClient mc = new ManagementClient(args[0], args[1]);
-			mc.listen();
+			}catch(RemoteException e){
+				e.printStackTrace();
+			}
+			//mc.listen();
 		}
 	}
 }

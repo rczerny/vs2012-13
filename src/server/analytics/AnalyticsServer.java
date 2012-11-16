@@ -6,26 +6,33 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
+import java.util.ArrayList;
+import client.mgmt.ManagementClientInterface;
 
 import tools.PropertiesParser;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
 
-	HashMap<String, Client> clients = new HashMap<String, Client>();
+	private ArrayList<Client> clients = new ArrayList<Client>();
 	int highestSubscriptionId = 1;
 
 	@Override
-	public String subscribe(String c, String filter) throws RemoteException {
+	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
 		Subscription sub = new Subscription(highestSubscriptionId, filter);
-
-		Client client = new Client(c);
-		if(!clients.containsKey(c)) {
-			clients.put(c, client);
+		Client client = null;
+		
+		for(Client c:clients) {
+			if(c.getmClient().equals(mClient)) {
+				client = c;
+			}
 		}
 
 		if(!sub.filter.isEmpty()) {
-			client.subscriptions.put(highestSubscriptionId, sub);
+			if(client == null) {
+				client = new Client(mClient);
+				clients.add(client);
+			}	
+			client.getSubscriptions().put(highestSubscriptionId, sub);
 		}
 
 		int id = highestSubscriptionId;
@@ -40,17 +47,19 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 	@Override
 	public void processEvent(Event e) throws RemoteException {
-		
+
+
 	}
 
 	@Override
-	public String unsubscribe(String c, int id) throws RemoteException {
-		if(clients.containsKey(c)) {
-			Client client = clients.get(c);
-					if(client.getSubscriptions().containsKey(id)) {
-						client.getSubscriptions().remove(id);
-						return "subscription " + id + " terminated";
-					} 
+	public String unsubscribe(ManagementClientInterface mClient, int id) throws RemoteException {
+		for(Client c:clients) {
+			if(c.getmClient().equals(mClient)) {
+				if(c.getSubscriptions().containsKey(id)) {
+					c.getSubscriptions().remove(id);
+					return "subscription " + id + " terminated";
+				}
+			}
 		}
 		return "unsubscribe failed";
 	}

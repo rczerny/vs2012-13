@@ -12,7 +12,11 @@ import java.rmi.registry.Registry;
 import org.junit.Before;
 import org.junit.Test;
 
+import client.mgmt.ManagementClient;
+import client.mgmt.ManagementClientInterface;
+
 import server.analytics.AnalyticsServerRMI;
+import server.billing.BillingServerRMI;
 import tools.PropertiesParser;
 
 public class AnalyticsServerTest {
@@ -20,6 +24,7 @@ public class AnalyticsServerTest {
 	private AnalyticsServerRMI as = null;
 	private PropertiesParser ps = null;
 	private Registry reg = null;
+	private ManagementClientInterface mClient = null;
 
 	@Before
 	public void setUp() {
@@ -29,6 +34,7 @@ public class AnalyticsServerTest {
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
 			reg = LocateRegistry.getRegistry(host, portNr);
+			mClient = new ManagementClient("RemoteAnalyticsServer", "RemoteBillingServer");
 		} catch (FileNotFoundException e) {
 			fail ("properties file not found!");
 		} catch (NumberFormatException e) {
@@ -77,8 +83,8 @@ public class AnalyticsServerTest {
 		String a = "Created subscription with ID 1 for events using filter (USER_*)|(BID_WON)";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			String test = as.subscribe("test", "(USER_*)|(BID_WON)");
-			assertEquals(test, a);
+			String test = as.subscribe(mClient, "(USER_*)|(BID_WON)");
+			assertEquals(a, test);
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -93,8 +99,8 @@ public class AnalyticsServerTest {
 		String a = "Creating subscription failed!";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			String test = as.subscribe("test", "(USER_WON");
-			assertEquals(test, a);
+			String test = as.subscribe(mClient, "(USER_WON");
+			assertEquals(a, test);
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -105,11 +111,13 @@ public class AnalyticsServerTest {
 	@Test
 	public void testValidUnsubscribe() {
 		assertNotNull(reg);
-		String a = "subscription 1 terminated";
+		String a = "subscription 2 terminated";
+		String b = "Created subscription with ID 2 for events using filter (USER_*)|(BID_WON)";
 		String test = "";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			as.subscribe("test", "(USER_*)|(BID_WON)");
+			String test2 = as.subscribe(mClient, "(USER_*)|(BID_WON)");
+			assertEquals(b, test2);
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -117,12 +125,12 @@ public class AnalyticsServerTest {
 		}
 		
 		try {
-			test = as.unsubscribe("test", 1);
+			test = as.unsubscribe(mClient, 1);
 		} catch (RemoteException e) {
 			fail("Remote Error executing unsubscribe function!");
 		}
 
-		assertEquals(test, a);
+		assertEquals(a, test);
 	}
 
 	@Test
@@ -132,7 +140,7 @@ public class AnalyticsServerTest {
 		String test = "";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			as.subscribe("test", "(USER_*)|(BID_WON)");
+			as.subscribe(mClient, "(USER_*)|(BID_WON)");
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -140,11 +148,11 @@ public class AnalyticsServerTest {
 		}
 		
 		try {
-			test = as.unsubscribe("test", 100);
+			test = as.unsubscribe(mClient, 100);
 		} catch (RemoteException e) {
 			fail("Remote Error executing unsubscribe function!");
 		}
 
-		assertEquals(test, a);
+		assertEquals(a, test);
 	}
 }
