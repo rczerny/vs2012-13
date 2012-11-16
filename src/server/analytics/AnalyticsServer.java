@@ -40,7 +40,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 	@Override
 	public void processEvent(Event e) throws RemoteException {
-
+		
 	}
 
 	@Override
