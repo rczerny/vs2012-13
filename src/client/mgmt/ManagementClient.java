@@ -10,9 +10,11 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 
 import server.analytics.AnalyticsServer;
 import server.analytics.AnalyticsServerRMI;
+import server.analytics.Event;
 import server.billing.BillingServerRMI;
 import server.billing.BillingServerSecure;
 import tools.PropertiesParser;
@@ -26,6 +28,8 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	private PropertiesParser ps = null;
 	private Registry reg = null;
 	private BufferedReader keys = null;
+	private int id = 0;
+	private ArrayList<String> buffer = null;
 
 	public ManagementClient(String analyticsBindingName, String billingBindingName) throws RemoteException{		
 		keys = new BufferedReader(new InputStreamReader(System.in));
@@ -48,6 +52,8 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			System.err.println("Object couldn't be found");
 			e.printStackTrace();
 		}
+		id = 1;
+		buffer = new ArrayList<String>();
 	}
 	
 	public void listen() {
@@ -135,9 +141,25 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	}
 	
 	@Override
-	public void updateEvents() throws RemoteException {
-		// TODO Auto-generated method stub
-		
+	public void updateEvents(Event e) throws RemoteException {
+		buffer.add(e.toString());
+		System.out.println(e.toString());
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public ArrayList<String> getBuffer() {
+		return buffer;
+	}
+
+	public void setBuffer(ArrayList<String> buffer) {
+		this.buffer = buffer;
 	}
 
 	public static void main(String[] args) {

@@ -20,8 +20,6 @@ public class Client {
 		return mClient;
 	}
 
-
-
 	public void setmClient(ManagementClientInterface mClient) {
 		this.mClient = mClient;
 	}

@@ -16,6 +16,7 @@ import client.mgmt.ManagementClient;
 import client.mgmt.ManagementClientInterface;
 
 import server.analytics.AnalyticsServerRMI;
+import server.analytics.BidEvent;
 import server.billing.BillingServerRMI;
 import tools.PropertiesParser;
 
@@ -125,7 +126,7 @@ public class AnalyticsServerTest {
 		}
 		
 		try {
-			test = as.unsubscribe(mClient, 1);
+			test = as.unsubscribe(mClient, 2);
 		} catch (RemoteException e) {
 			fail("Remote Error executing unsubscribe function!");
 		}
@@ -154,5 +155,38 @@ public class AnalyticsServerTest {
 		}
 
 		assertEquals(a, test);
+	}
+	
+	@Test
+	public void testProcessEvent() {
+		assertNotNull(reg);
+		
+		try {
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+			as.subscribe(mClient, "(USER_*)|(BID_WON)");
+		} catch (RemoteException e) {
+			fail("Remote Error executing subscribe function!");
+		} catch (NotBoundException e) {
+			fail("Remote object couldn't be found!");
+		}
+		
+		BidEvent be = new BidEvent();
+		be.setType("BID_WON");
+		be.setId("2");
+		be.setPrice(2.0);
+		
+		try {
+			as.processEvent(be);
+		} catch (RemoteException e) {
+			fail("Remote Error executing processEvent function!");
+			e.printStackTrace();
+		}
+
+		try {
+			assertNotNull(mClient.getBuffer());
+		} catch (RemoteException e) {
+			fail("Remote Error executing getBuffer function!");
+			e.printStackTrace();
+		}
 	}
 }

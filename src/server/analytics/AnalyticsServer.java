@@ -7,6 +7,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collection;
+
 import client.mgmt.ManagementClientInterface;
 
 import tools.PropertiesParser;
@@ -22,7 +24,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		Client client = null;
 		
 		for(Client c:clients) {
-			if(c.getmClient().equals(mClient)) {
+			if(c.getmClient().getId()==mClient.getId()) {
 				client = c;
 			}
 		}
@@ -47,20 +49,30 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 	@Override
 	public void processEvent(Event e) throws RemoteException {
-
-
+		for(Client c:clients) {
+			Collection<Subscription> sub = c.getSubscriptions().values();
+			for(Subscription s:sub) {
+				System.out.println(s.getFilter().toString());
+				if(s.getFilter().contains(e.type)) {
+					c.getmClient().updateEvents(e);
+				}
+			}
+		}
 	}
 
 	@Override
 	public String unsubscribe(ManagementClientInterface mClient, int id) throws RemoteException {
 		for(Client c:clients) {
-			if(c.getmClient().equals(mClient)) {
+			System.out.println(c.getmClient().getId());
+			if(c.getmClient().getId()==mClient.getId()) {
 				if(c.getSubscriptions().containsKey(id)) {
 					c.getSubscriptions().remove(id);
+					System.out.println("Remove");
 					return "subscription " + id + " terminated";
 				}
 			}
 		}
+		
 		return "unsubscribe failed";
 	}
 
