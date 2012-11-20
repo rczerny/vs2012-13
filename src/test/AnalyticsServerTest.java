@@ -16,6 +16,7 @@ import client.mgmt.ManagementClient;
 import client.mgmt.ManagementClientInterface;
 
 import server.analytics.AnalyticsServerRMI;
+import server.analytics.AuctionEvent;
 import server.analytics.BidEvent;
 import server.billing.BillingServerRMI;
 import tools.PropertiesParser;
@@ -113,11 +114,11 @@ public class AnalyticsServerTest {
 	public void testValidUnsubscribe() {
 		assertNotNull(reg);
 		String a = "subscription 2 terminated";
-		String b = "Created subscription with ID 2 for events using filter (USER_*)|(BID_WON)";
+		String b = "Created subscription with ID 2 for events using filter (BID_PLACED)";
 		String test = "";
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			String test2 = as.subscribe(mClient, "(USER_*)|(BID_WON)");
+			String test2 = as.subscribe(mClient, "(BID_PLACED)");
 			assertEquals(b, test2);
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
@@ -158,12 +159,11 @@ public class AnalyticsServerTest {
 	}
 	
 	@Test
-	public void testProcessEvent() {
+	public void testValidProcessEvent() {
 		assertNotNull(reg);
 		
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
-			as.subscribe(mClient, "(USER_*)|(BID_WON)");
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
@@ -183,7 +183,44 @@ public class AnalyticsServerTest {
 		}
 
 		try {
-			assertNotNull(mClient.getBuffer());
+			assertTrue(!mClient.getBuffer().isEmpty());
+		} catch (RemoteException e) {
+			fail("Remote Error executing getBuffer function!");
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void testInvalidProcessEvent() {
+		assertNotNull(reg);
+		
+		try {
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+		} catch (RemoteException e) {
+			fail("Remote Error executing subscribe function!");
+		} catch (NotBoundException e) {
+			fail("Remote object couldn't be found!");
+		}
+		
+		AuctionEvent ae = new AuctionEvent();
+		ae.setType("AUCTION_STARTED");
+		ae.setId("1");
+		ae.setAuctionID(50000);
+		try {
+			mClient.getBuffer().clear();
+		} catch (RemoteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			as.processEvent(ae);
+		} catch (RemoteException e) {
+			fail("Remote Error executing processEvent function!");
+			e.printStackTrace();
+		}
+
+		try {
+			assertTrue(mClient.getBuffer().isEmpty());
 		} catch (RemoteException e) {
 			fail("Remote Error executing getBuffer function!");
 			e.printStackTrace();

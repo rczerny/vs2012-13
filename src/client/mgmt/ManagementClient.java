@@ -30,6 +30,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	private BufferedReader keys = null;
 	private int id = 0;
 	private ArrayList<String> buffer = null;
+	private boolean auto;
 
 	public ManagementClient(String analyticsBindingName, String billingBindingName) throws RemoteException{		
 		keys = new BufferedReader(new InputStreamReader(System.in));
@@ -54,8 +55,9 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		id = 1;
 		buffer = new ArrayList<String>();
+		auto = true;
 	}
-	
+
 	public void listen() {
 		try {
 			String command = "";
@@ -84,25 +86,25 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-						
+
 					}
 				} else if (commandParts[0].equals("!removeStep")) {
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-						
+
 					}
 				} else if (commandParts[0].equals("!bill")) {
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-						
+
 					}
 				} else if (commandParts[0].equals("!logout")) {
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-						
+
 					}
 				} else {
 					System.err.println("Unknown command!");
@@ -113,11 +115,11 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			e.printStackTrace();
 		}
 	}
-	
+
 	public String subscribe(String filter) {
 		String answer = "";
 		try {
-		    answer = as.subscribe(this, filter);
+			answer = as.subscribe(this, filter);
 		} catch(Exception ex) {
 			ex.printStackTrace();
 		}
@@ -126,11 +128,11 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		return answer;
 	}
-	
+
 	public String unsubscribe(int id) {
 		String answer = "";
 		try {
-		    answer = as.unsubscribe(this, id);
+			answer = as.unsubscribe(this, id);
 		} catch(Exception ex) {
 			ex.printStackTrace();
 		}
@@ -139,11 +141,23 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		return answer;
 	}
-	
+
 	@Override
 	public void updateEvents(Event e) throws RemoteException {
-		buffer.add(e.toString());
-		System.out.println(e.toString());
+		if(auto) {
+			System.out.println(buffer.toString());
+		} else {
+			buffer.add(e.toString());
+		}
+	}
+
+	public void printBuffer() {
+		if(!buffer.isEmpty()) {
+			for(String s:buffer) {
+				System.out.println(s);
+			}
+			buffer.clear();
+		}
 	}
 
 	public int getId() {
@@ -153,7 +167,15 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	public void setId(int id) {
 		this.id = id;
 	}
+	
+	public boolean getAuto() {
+		return auto;
+	}
 
+	public void setAuto(boolean a) {
+		auto = a;
+	}
+	
 	public ArrayList<String> getBuffer() {
 		return buffer;
 	}
@@ -168,7 +190,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			System.err.println("USAGE: java ManagementClient <AnalyticsBindingname> <BillingBindingName>");
 		} else {
 			try{
-			ManagementClient mc = new ManagementClient(args[0], args[1]);
+				ManagementClient mc = new ManagementClient(args[0], args[1]);
 			}catch(RemoteException e){
 				e.printStackTrace();
 			}

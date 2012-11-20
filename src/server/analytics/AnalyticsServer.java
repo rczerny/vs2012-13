@@ -20,7 +20,6 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 	@Override
 	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
-		Subscription sub = new Subscription(highestSubscriptionId, filter);
 		Client client = null;
 		
 		for(Client c:clients) {
@@ -28,17 +27,22 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				client = c;
 			}
 		}
-
+		if(client == null) {
+			client = new Client(mClient);
+			System.out.println("new Client");
+			clients.add(client);
+		}	
+		
+		Subscription sub = new Subscription(highestSubscriptionId, filter, client);
+		
 		if(!sub.filter.isEmpty()) {
-			if(client == null) {
-				client = new Client(mClient);
-				clients.add(client);
-			}	
+			
 			client.getSubscriptions().put(highestSubscriptionId, sub);
 		}
 
 		int id = highestSubscriptionId;
-
+		System.out.println(this.clients.toString());
+		
 		if(sub.filter.isEmpty()) {
 			return "Creating subscription failed!";
 		}
@@ -52,7 +56,6 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		for(Client c:clients) {
 			Collection<Subscription> sub = c.getSubscriptions().values();
 			for(Subscription s:sub) {
-				System.out.println(s.getFilter().toString());
 				if(s.getFilter().contains(e.type)) {
 					c.getmClient().updateEvents(e);
 				}

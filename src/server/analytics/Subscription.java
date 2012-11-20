@@ -7,13 +7,15 @@ public class Subscription {
 	final ArrayList<String> types = new ArrayList<String>();
 	int id;
 	ArrayList<String> filter;
+	Client c;
 
-	public Subscription(int id, String f) {
+	public Subscription(int id, String f, Client c) {
 		this.id = id;	
 		for(int i = 0;i<a.length;i++) {
 			types.add(a[i]);
 		}
 
+		this.c = c;
 		filter = new ArrayList<String>();
 		createFilter(f);
 	}
@@ -35,7 +37,15 @@ public class Subscription {
 					if(type.matches(filterParts[i])) {
 						//add type to filter
 						if(!filter.contains(type)) {
-							filter.add(type);
+							boolean alreadyExists = false;
+							for(Subscription s:c.getSubscriptions().values()) {
+								if(s.getFilter().contains(type)) {
+									alreadyExists = true;
+								}
+							}
+							if(!alreadyExists) {
+								filter.add(type);
+							}
 						}
 					}
 				}
