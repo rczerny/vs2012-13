@@ -159,16 +159,23 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			String bindingName = args[0];
 			PropertiesParser ps;
 			Registry registry = null;
+			int registryPort = 0;
+			String host = null;
 			try {
 				ps = new PropertiesParser("registry.properties");
-				int registryPort = Integer.parseInt(ps.getProperty("registry.port"));
+				registryPort = Integer.parseInt(ps.getProperty("registry.port"));
+				host = ps.getProperty("registry.host");
 				registry = LocateRegistry.createRegistry(registryPort);
 			} catch (FileNotFoundException e) {
 				System.err.println("Properties file couldn't be found!");
 				e.printStackTrace();
 			} catch (RemoteException e) {
-				System.err.println("Couldn't create Registry.");
-				e.printStackTrace();
+				try {
+					registry = LocateRegistry.getRegistry(host, registryPort);
+				} catch (RemoteException e1) {
+					System.err.println("Couldn't bind to registry!");
+					e.printStackTrace();
+				}
 			}
 			AnalyticsServerRMI as = new AnalyticsServer();
 

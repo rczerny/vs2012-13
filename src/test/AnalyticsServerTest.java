@@ -37,7 +37,7 @@ public class AnalyticsServerTest {
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
 			reg = LocateRegistry.getRegistry(host, portNr);
-			mClient = new ManagementClient("RemoteAnalyticsServer", "RemoteBillingServer");
+			mClient = (ManagementClientInterface)new ManagementClient("RemoteAnalyticsServer", "RemoteBillingServer");
 		} catch (FileNotFoundException e) {
 			fail ("properties file not found!");
 		} catch (NumberFormatException e) {

@@ -22,7 +22,9 @@ import server.billing.BillingServerSecure;
 import server.billing.PriceStep;
 import tools.PropertiesParser;
 
-public class ManagementClient extends UnicastRemoteObject implements ManagementClientInterface{
+public class ManagementClient extends UnicastRemoteObject implements ManagementClientInterface 
+{	
+	private static final long serialVersionUID = -5040308854282471229L;
 	private String analyticsBindingName = "";
 	private String billingBindingName = "";
 	private BillingServerRMI bs = null;
@@ -140,6 +142,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 							System.err.println("Invalid command! Must be !bill <username>");
 						} else {
 							try {
+								System.out.println("User: " + commandParts[1]);
 								Bill bill = bss.getBill(commandParts[1]);
 								System.out.printf("%-12s %-12s %-12s %-12s %-12s%n", "auction_ID", "strike_price", "fee_fixed", "fee_variable", "fee_total");
 								for (AuctionCharging ac : bill.getAuctionChargings()) {
@@ -250,9 +253,10 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			System.err.println("Invalid arguments!");
 			System.err.println("USAGE: java ManagementClient <AnalyticsBindingname> <BillingBindingName>");
 		} else {
+			ManagementClient mc = null;
 			try{
-				ManagementClient mc = new ManagementClient(args[0], args[1]);
-			}catch(RemoteException e){
+				mc = new ManagementClient(args[0], args[1]);
+			} catch(RemoteException e) {
 				e.printStackTrace();
 			}
 			mc.listen();
