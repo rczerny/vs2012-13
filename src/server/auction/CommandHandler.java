@@ -140,6 +140,7 @@ public class CommandHandler implements Runnable
 										UserEvent ue = new UserEvent();
 										ue.setType("USER_LOGIN");
 										ue.setUsername(u.getUsername());
+										ue.setTimestamp(System.currentTimeMillis()/1000);
 										as.processEvent(ue);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -169,6 +170,7 @@ public class CommandHandler implements Runnable
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
 							ue.setUsername(u.getUsername());
+							ue.setTimestamp(System.currentTimeMillis()/1000);
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -206,6 +208,7 @@ public class CommandHandler implements Runnable
 									AuctionEvent ae = new AuctionEvent();
 									ae.setType("AUCTION_STARTED");
 									ae.setAuctionID(a.getId());
+									ae.setTimestamp(System.currentTimeMillis()/1000);
 									as.processEvent(ae);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -252,6 +255,7 @@ public class CommandHandler implements Runnable
 									be.setUsername(a.getHighestBidder().getUsername());
 									be.setAuctionId(a.getId());
 									be.setPrice(amount);
+									be.setTimestamp(System.currentTimeMillis()/1000);
 									as.processEvent(be);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -265,12 +269,13 @@ public class CommandHandler implements Runnable
 								bw.flush();
 
 								try{
-										BidEvent be = new BidEvent();
-										be.setType("BID_PLACED");
-										be.setUsername(u.getUsername());
-										be.setAuctionId(a.getId());
-										be.setPrice(amount);
-										as.processEvent(be);
+									BidEvent be = new BidEvent();
+									be.setType("BID_PLACED");
+									be.setUsername(u.getUsername());
+									be.setAuctionId(a.getId());
+									be.setPrice(amount);
+									be.setTimestamp(System.currentTimeMillis()/1000);
+									as.processEvent(be);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 									e.printStackTrace();
@@ -294,6 +299,16 @@ public class CommandHandler implements Runnable
 				} else if(commandParts[0].equals("!end")) {
 					localShutdown = true;
 					if (u != null && u.isLoggedIn()) {
+						try{
+							UserEvent ue = new UserEvent();
+							ue.setType("USER_LOGOUT");
+							ue.setUsername(u.getUsername());
+							ue.setTimestamp(System.currentTimeMillis()/1000);
+							as.processEvent(ue);
+						} catch (RemoteException e) {
+							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+							e.printStackTrace();
+						}
 						u.setLoggedIn(false);
 						//u.setSocket(null);
 						u.setUdpPort(0);

@@ -55,7 +55,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		id = 1;
 		buffer = new ArrayList<String>();
-		auto = true;
+		auto = false;
 	}
 
 	public void listen() {
@@ -143,9 +143,9 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	}
 
 	@Override
-	public void updateEvents(Event e) throws RemoteException {
+	public void processEvent(Event e) throws RemoteException {
 		if(auto) {
-			System.out.println(buffer.toString());
+			System.out.println("mc " + buffer.toString());
 		} else {
 			buffer.add(e.toString());
 		}
@@ -174,6 +174,14 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 
 	public void setAuto(boolean a) {
 		auto = a;
+	}
+	
+	public void hide(){
+		auto = false;
+	}
+	
+	public void auto(){
+		auto = true;
 	}
 	
 	public ArrayList<String> getBuffer() {

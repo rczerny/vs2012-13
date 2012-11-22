@@ -18,6 +18,7 @@ import client.mgmt.ManagementClientInterface;
 import server.analytics.AnalyticsServerRMI;
 import server.analytics.AuctionEvent;
 import server.analytics.BidEvent;
+import server.analytics.UserEvent;
 import server.billing.BillingServerRMI;
 import tools.PropertiesParser;
 
@@ -125,7 +126,7 @@ public class AnalyticsServerTest {
 		} catch (NotBoundException e) {
 			fail("Remote object couldn't be found!");
 		}
-		
+
 		try {
 			test = as.unsubscribe(mClient, 2);
 		} catch (RemoteException e) {
@@ -148,7 +149,7 @@ public class AnalyticsServerTest {
 		} catch (NotBoundException e) {
 			fail("Remote object couldn't be found!");
 		}
-		
+
 		try {
 			test = as.unsubscribe(mClient, 100);
 		} catch (RemoteException e) {
@@ -157,24 +158,25 @@ public class AnalyticsServerTest {
 
 		assertEquals(a, test);
 	}
-	
+
 	@Test
 	public void testValidProcessEvent() {
 		assertNotNull(reg);
-		
+
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+			as.subscribe(mClient, "(BID_*)");
 		} catch (RemoteException e) {
 			fail("Remote Error executing subscribe function!");
 		} catch (NotBoundException e) {
 			fail("Remote object couldn't be found!");
 		}
-		
+
 		BidEvent be = new BidEvent();
 		be.setType("BID_WON");
 		be.setId("2");
 		be.setPrice(2.0);
-		
+
 		try {
 			as.processEvent(be);
 		} catch (RemoteException e) {
@@ -189,11 +191,11 @@ public class AnalyticsServerTest {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Test
 	public void testInvalidProcessEvent() {
 		assertNotNull(reg);
-		
+
 		try {
 			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
 		} catch (RemoteException e) {
@@ -201,7 +203,7 @@ public class AnalyticsServerTest {
 		} catch (NotBoundException e) {
 			fail("Remote object couldn't be found!");
 		}
-		
+
 		AuctionEvent ae = new AuctionEvent();
 		ae.setType("AUCTION_STARTED");
 		ae.setId("1");
@@ -223,6 +225,55 @@ public class AnalyticsServerTest {
 			assertTrue(mClient.getBuffer().isEmpty());
 		} catch (RemoteException e) {
 			fail("Remote Error executing getBuffer function!");
+			e.printStackTrace();
+		}
+	}
+
+	@Test
+	public void testCreateMinSessionTime() {
+		assertNotNull(reg);
+		double session;
+
+		try {
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+		} catch (RemoteException e) {
+			fail("Remote Error executing subscribe function!");
+		} catch (NotBoundException e) {
+			fail("Remote object couldn't be found!");
+		}
+
+		UserEvent ue = new UserEvent();
+		ue.setType("USER_LOGIN");
+		long a = (System.currentTimeMillis() / 1000) - 50;
+		ue.setTimestamp(a);
+		ue.setUsername("daniel");
+
+		UserEvent ue1 = new UserEvent();
+		ue1.setType("USER_LOGOUT");
+		long b = (System.currentTimeMillis() / 1000) + 50;
+		ue1.setTimestamp(b);
+		ue1.setUsername("daniel");
+
+		try {
+			as.processEvent(ue);
+		} catch (RemoteException e) {
+			fail("Remote Error executing processEvent function!");
+			e.printStackTrace();
+		}
+
+		try {
+			as.processEvent(ue1);
+		} catch (RemoteException e) {
+			fail("Remote Error executing processEvent function!");
+			e.printStackTrace();
+		}
+
+		session = b-a;
+		System.out.println(session);
+		try {
+			assertEquals(session, as.getMin(), 2);
+		} catch (RemoteException e) {
+			fail("Remote Error executing processEvent function!");
 			e.printStackTrace();
 		}
 	}
