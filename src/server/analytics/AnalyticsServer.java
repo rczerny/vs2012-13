@@ -6,29 +6,46 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import client.mgmt.ManagementClientInterface;
 
 import tools.PropertiesParser;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
 
-	HashMap<String, Client> clients = new HashMap<String, Client>();
-	int highestSubscriptionId = 1;
+	private ArrayList<Client> clients = new ArrayList<Client>();
+	private int highestSubscriptionId = 1;
+	private ArrayList<Double> sessionTime = new ArrayList<Double>();
+	private double minSessionTime = 0;
+	private double maxSessionTime = 0;
+	private ArrayList<UserEvent> userEvents = new ArrayList<UserEvent>();
 
 	@Override
-	public String subscribe(String c, String filter) throws RemoteException {
-		Subscription sub = new Subscription(highestSubscriptionId, filter);
+	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
+		Client client = null;
 
-		Client client = new Client(c);
-		if(!clients.containsKey(c)) {
-			clients.put(c, client);
+		for(Client c:clients) {
+			if(c.getmClient().getId()==mClient.getId()) {
+				client = c;
+			}
 		}
+		if(client == null) {
+			client = new Client(mClient);
+			System.out.println("new Client");
+			clients.add(client);
+		}	
+
+		Subscription sub = new Subscription(highestSubscriptionId, filter, client);
 
 		if(!sub.filter.isEmpty()) {
-			client.subscriptions.put(highestSubscriptionId, sub);
+
+			client.getSubscriptions().put(highestSubscriptionId, sub);
 		}
 
 		int id = highestSubscriptionId;
+		System.out.println(this.clients.toString());
 
 		if(sub.filter.isEmpty()) {
 			return "Creating subscription failed!";
@@ -40,18 +57,93 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 	@Override
 	public void processEvent(Event e) throws RemoteException {
-		
+		if(e instanceof UserEvent) {
+			createSessionTime(e);
+		}
+		//process Event to subscribed clients
+		for(Client c:clients) {
+			Collection<Subscription> sub = c.getSubscriptions().values();
+			for(Subscription s:sub) {
+				if(s.getFilter().contains(e.type)) {
+					c.getmClient().processEvent(e);
+				}
+			}
+		}
+	}
+
+	private void createSessionTime(Event e) {
+		//create SessionTimeEvents
+
+		if(e.type.equals("USER_LOGIN")) {
+			userEvents.add((UserEvent) e);
+		}
+		if(e.type.equals("USER_LOGOUT")) {
+			for(int i = 0;i<userEvents.size();i++){					
+				if(((UserEvent) e).getUsername().equals(userEvents.get(i).getUsername())) {
+					double session = e.getTimestamp() - userEvents.get(i).getTimestamp();
+					
+					if(session < minSessionTime || minSessionTime == 0) {
+						minSessionTime = session;
+						try{
+							StatisticsEvent se = new StatisticsEvent();
+							se.setType("USER_SESSIONTIME_MIN");
+							se.setValue(session);
+							processEvent(se);
+						} catch (RemoteException ex) {
+							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+							ex.printStackTrace();
+						}
+					}
+					
+					if(session > minSessionTime) {
+						maxSessionTime = session;
+						try{
+							StatisticsEvent se = new StatisticsEvent();
+							se.setType("USER_SESSIONTIME_MAX");
+							se.setValue(session);
+							processEvent(se);
+						} catch (RemoteException ex) {
+							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+							ex.printStackTrace();
+						}
+					}
+					
+					sessionTime.add(session);
+					userEvents.remove(i);
+					double sum = 0;
+					for(double s:sessionTime) {
+						sum = sum + s;
+					}
+					
+					double avg = sum / sessionTime.size();
+					try{
+						StatisticsEvent se = new StatisticsEvent();
+						se.setType("USER_SESSIONTIME_AVG");
+						se.setValue(avg);
+						processEvent(se);
+					} catch (RemoteException ex) {
+						System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+						ex.printStackTrace();
+					}
+					return;
+				}
+			}
+		}
 	}
 
 	@Override
-	public String unsubscribe(String c, int id) throws RemoteException {
-		if(clients.containsKey(c)) {
-			Client client = clients.get(c);
-					if(client.getSubscriptions().containsKey(id)) {
-						client.getSubscriptions().remove(id);
-						return "subscription " + id + " terminated";
-					} 
+	public String unsubscribe(ManagementClientInterface mClient, int id) throws RemoteException {
+		for(Client c:clients) {
+			System.out.println(c.getmClient().getId());
+			if(c.getmClient().getId()==mClient.getId()) {
+				if(c.getSubscriptions().containsKey(id)) {
+					c.getSubscriptions().remove(id);
+					System.out.println("Remove");
+					return "subscription " + id + " terminated";
+				}
+			}
 		}
+
 		return "unsubscribe failed";
 	}
 
@@ -97,5 +189,10 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				e.printStackTrace();
 			}
 		}
+	}
+
+	@Override
+	public double getMin() throws RemoteException {
+		return minSessionTime;
 	}
 }

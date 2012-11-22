@@ -7,13 +7,15 @@ public class Subscription {
 	final ArrayList<String> types = new ArrayList<String>();
 	int id;
 	ArrayList<String> filter;
+	Client c;
 
-	public Subscription(int id, String f) {
+	public Subscription(int id, String f, Client c) {
 		this.id = id;	
 		for(int i = 0;i<a.length;i++) {
 			types.add(a[i]);
 		}
 
+		this.c = c;
 		filter = new ArrayList<String>();
 		createFilter(f);
 	}
@@ -24,17 +26,27 @@ public class Subscription {
 			//remove ( and )
 			if(filterParts[i].charAt(0) == '(') {
 				filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
-				
+
 				//if last char of pattern is * change to .*
 				if(filterParts[i].charAt(filterParts[i].length()-1) == '*') {
 					filterParts[i]=filterParts[i].substring(0, filterParts[i].length()-1) + ".*";
 				}
-				
+
 				//for each type of types check if matches with pattern
 				for(String type:types) {
 					if(type.matches(filterParts[i])) {
 						//add type to filter
-						filter.add(type);
+						if(!filter.contains(type)) {
+							boolean alreadyExists = false;
+							for(Subscription s:c.getSubscriptions().values()) {
+								if(s.getFilter().contains(type)) {
+									alreadyExists = true;
+								}
+							}
+							if(!alreadyExists) {
+								filter.add(type);
+							}
+						}
 					}
 				}
 
@@ -42,6 +54,26 @@ public class Subscription {
 				System.out.println("Filter muss in Runden Klammern stehen!");
 			}
 		}
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public ArrayList<String> getFilter() {
+		return filter;
+	}
+
+	public void setFilter(ArrayList<String> filter) {
+		this.filter = filter;
+	}
+
+	public ArrayList<String> getTypes() {
+		return types;
 	}
 
 	public String toString(){

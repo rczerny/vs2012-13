@@ -3,23 +3,25 @@ package server.analytics;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Client {
-	String name;
-	HashMap<Integer, Subscription> subscriptions;
-	ArrayList<Event> buffer;
+import client.mgmt.ManagementClientInterface;
 
-	public Client(String name) {
-		this.name = name;
+public class Client {
+	private ManagementClientInterface mClient;
+	private HashMap<Integer, Subscription> subscriptions;
+	private ArrayList<Event> buffer;
+
+	public Client(ManagementClientInterface mClient) {
+		this.mClient = mClient;
 		subscriptions = new HashMap<Integer, Subscription>();
 		buffer = new ArrayList<Event>();
 	}
-
-	public String getName() {
-		return name;
+	
+	public ManagementClientInterface getmClient() {
+		return mClient;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setmClient(ManagementClientInterface mClient) {
+		this.mClient = mClient;
 	}
 
 	public HashMap<Integer, Subscription> getSubscriptions() {
@@ -36,5 +38,5 @@ public class Client {
 
 	public void setBuffer(ArrayList<Event> buffer) {
 		this.buffer = buffer;
-	}	
+	}
 }
