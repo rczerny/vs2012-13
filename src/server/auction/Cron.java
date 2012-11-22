@@ -18,9 +18,11 @@ public class Cron implements Runnable
 	private AuctionServer main = null;
 	private Timer timer = null;
 	private Task task = null;
+	private String billingBindingName = "";
 
-	public Cron(AuctionServer main) {
+	public Cron(AuctionServer main, String billingBindingName) {
 		this.main = main;
+		this.billingBindingName = billingBindingName;
 	}
 
 	public void run() {
@@ -48,7 +50,7 @@ public class Cron implements Runnable
 							int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 							String host = ps.getProperty("registry.host");
 							reg = LocateRegistry.getRegistry(host, portNr);
-							bs = (BillingServerRMI) reg.lookup("RemoteBillingServer");
+							bs = (BillingServerRMI) reg.lookup(billingBindingName);
 							bss = (BillingServerSecure) bs.login("auctionServer", "auctionServer");
 						} catch (FileNotFoundException e) {
 							System.err.println("properties file not found!");

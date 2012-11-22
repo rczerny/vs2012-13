@@ -45,9 +45,9 @@ public class AuctionServer
 		this.shutdown = shutdown;
 	}
 
-	public void runServer() {
+	public void runServer(String billingBindingName) {
 		pool.execute(new ConsoleListener(this));
-		tt = new Cron(this);
+		tt = new Cron(this, billingBindingName);
 		pool.execute(tt);
 		while (!shutdown) {
 			try {
@@ -142,16 +142,16 @@ public class AuctionServer
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if (args.length != 1) {
+		if (args.length != 3) {
 			System.err.println("Invalid arguments!");
-			System.err.println("USAGE: java AuctionServer <tcpPort>");
+			System.err.println("USAGE: java AuctionServer <tcpPort> <analyticsBindingName> <billingBindingName>");
 			System.err.println("tcpPort must be numeric and <= 65535!");
 		} else {
 			try {
 				int tcpPort = Integer.parseInt(args[0]); // check if tcpPort is numeric
 				if (tcpPort <= 65535) {
 					AuctionServer main = new AuctionServer(tcpPort);
-					main.runServer();
+					main.runServer(args[2]);
 				} else {
 					System.err.println("tcpPort and udpPort must be numeric and <= 65535!");
 				}

@@ -43,6 +43,7 @@ public class PriceSteps implements Serializable
 		for (PriceStep p : priceSteps) {
 			if (p.getStartPrice() < price) { // if there's no price range for this price, the first lower range will be returned
 				ps = p;                      // if there is no lower range, the default range fixedPrice 1 and variablePrice 0 is returned
+				System.out.println("JA! PriceStep genommen!");
 			}
 		}
 		return ps;

@@ -80,11 +80,15 @@ public class BillingServerSecureImpl implements BillingServerSecure, Unreference
 			b = new Bill();
 			bills.put(user, b);
 		}
+		System.out.println(bills.size() + ", " + b.getAuctionChargings().size());
+		System.out.println("billAuction: " + user + " " + auctionID + " " + price);
+		System.out.println("Auction: " + ac.getAuctionId() + " " + ac.getFixedFee() + " " + ac.getVariableFee() + " " + ac.getStrikePrice());
 		b.addAuctionCharging(ac);
 	}
 
 	public Bill getBill(String user) throws RemoteException {
 		Bill b = bills.get(user);
+		System.out.println(bills.size());
 		if (b == null) {
 			throw new RemoteException("Error: Unknown user!");
 		}
