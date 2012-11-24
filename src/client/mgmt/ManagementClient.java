@@ -144,7 +144,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 								System.out.printf("%-12s %-12s %-12s %-12s %-12s%n", "auction_ID", "strike_price", "fee_fixed", "fee_variable", "fee_total");
 								for (AuctionCharging ac : bill.getAuctionChargings()) {
 									System.out.printf("%-12d %-12.0f %-12.0f %-12.1f %-12.1f%n", ac.getAuctionId(), ac.getStrikePrice(), ac.getFixedFee(), 
-																			   ac.getStrikePrice() + ac.getFixedFee());
+											ac.getStrikePrice() + ac.getFixedFee());
 								}
 							} catch (RemoteException e) {
 								System.err.println("Couldn't bill user! Please make sure the given user exists!");
@@ -220,7 +220,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	public void setId(int id) {
 		this.id = id;
 	}
-	
+
 	public boolean getAuto() {
 		return auto;
 	}
@@ -228,15 +228,15 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	public void setAuto(boolean a) {
 		auto = a;
 	}
-	
+
 	public void hide(){
 		auto = false;
 	}
-	
+
 	public void auto(){
 		auto = true;
 	}
-	
+
 	public ArrayList<String> getBuffer() {
 		return buffer;
 	}
@@ -250,8 +250,9 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			System.err.println("Invalid arguments!");
 			System.err.println("USAGE: java ManagementClient <AnalyticsBindingname> <BillingBindingName>");
 		} else {
+			ManagementClient mc = null;
 			try{
-				ManagementClient mc = new ManagementClient(args[0], args[1]);
+				mc = new ManagementClient(args[0], args[1]);
 			}catch(RemoteException e){
 				e.printStackTrace();
 			}
