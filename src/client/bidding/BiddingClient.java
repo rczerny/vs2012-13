@@ -145,7 +145,7 @@ public class BiddingClient implements Runnable
 			String answer = "";
 			BufferedReader br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
-			bw.write("!login dslab212 yuwiejoo\n");
+			bw.write("!login dslab	xxx password\n");
 			bw.flush();
 			if ((answer = br.readLine()) != null) {
 				System.out.println(answer);

@@ -22,7 +22,9 @@ import server.billing.BillingServerSecure;
 import server.billing.PriceStep;
 import tools.PropertiesParser;
 
-public class ManagementClient extends UnicastRemoteObject implements ManagementClientInterface{
+public class ManagementClient extends UnicastRemoteObject implements ManagementClientInterface
+{
+	private static final long serialVersionUID = -5040308854282471229L;
 	private String analyticsBindingName = "";
 	private String billingBindingName = "";
 	private BillingServerRMI bs = null;
@@ -144,8 +146,23 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 								System.out.printf("%-12s %-12s %-12s %-12s %-12s%n", "auction_ID", "strike_price", "fee_fixed", "fee_variable", "fee_total");
 								for (AuctionCharging ac : bill.getAuctionChargings()) {
 									System.out.printf("%-12d %-12.0f %-12.0f %-12.1f %-12.1f%n", ac.getAuctionId(), ac.getStrikePrice(), ac.getFixedFee(), 
-											ac.getStrikePrice() + ac.getFixedFee());
+											ac.getVariableFee(), ac.getVariableFee() + ac.getFixedFee());
 								}
+							} catch (RemoteException e) {
+								System.err.println("Couldn't bill user! Please make sure the given user exists!");
+								e.printStackTrace();
+							}
+						}
+					}
+				} else if (commandParts[0].equals("!billAuction")) {
+					if (bss == null) {
+						System.err.println("You need to login first!");
+					} else {
+						if (commandParts.length != 4) {
+							System.err.println("Invalid command! Must be !bill <username>");
+						} else {
+							try {
+								bss.billAuction(commandParts[1], Long.parseLong(commandParts[2]), Double.parseDouble(commandParts[3]));
 							} catch (RemoteException e) {
 								System.err.println("Couldn't bill user! Please make sure the given user exists!");
 								e.printStackTrace();
@@ -156,7 +173,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-
+						bss = null;
 					}
 				} else {
 					System.err.println("Unknown command!");

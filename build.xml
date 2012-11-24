@@ -12,6 +12,7 @@
     <property name="client2.port" value="12122"/><!-- UDP port of 2nd Bidding Client -->
     <property name="client3.port" value="12123"/><!-- UDP port of 3rd Bidding Client -->
     <property name="mgmtclient.name" value="client.mgmt.ManagementClient"/><!-- Management Client's full class name (including the package) -->
+    <property name="loadtest.name" value="test.LoadTest"/><!-- Load Test component's full class name -->
     <property name="analytics.name" value="server.analytics.AnalyticsServer"/><!-- Analytics Server's full class name (including the package) -->
     <property name="billing.name" value="server.billing.BillingServer"/><!-- Billing Server's full class name (including the package) -->
     <property name="analytics.bindingName" value="RemoteAnalyticsServer"/><!-- RMI Binding Name of the Analytics Server -->
@@ -99,7 +100,7 @@
     </target>
 
     <target name="run-loadtest" depends="compile" description="Run Load Test.">
-        <java classname="${client.name}" fork="true" classpathref="project.classpath">
+        <java classname="${loadtest.name}" fork="true" classpathref="project.classpath">
             <arg value="${server.host}"/>
             <arg value="${server.port}"/>
             <arg value="${analytics.bindingName}"/>

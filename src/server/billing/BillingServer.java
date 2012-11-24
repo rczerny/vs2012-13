@@ -13,6 +13,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ConcurrentHashMap;
 
 import tools.PropertiesParser;
 
@@ -21,6 +22,8 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 	private String bindingName;
 	private Registry registry;
 	private BillingServerSecure billingServerSecure = null;
+	public static PriceSteps s;
+	public static ConcurrentHashMap<String, Bill> bills;
 	
 	public void setBindingName(String bindingName) {
 		this.bindingName = bindingName;
@@ -126,6 +129,8 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 					e1.printStackTrace();
 				}
 			}
+			s = new PriceSteps();
+			bills = new ConcurrentHashMap<String, Bill>();
 			BillingServerRMI bs = new BillingServer();
 			BillingServerRMI rbs = null;
 			((BillingServer) bs).setBindingName(bindingName);

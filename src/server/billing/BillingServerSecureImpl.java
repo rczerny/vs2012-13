@@ -8,16 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BillingServerSecureImpl implements BillingServerSecure, Unreferenced 
 {
-	private PriceSteps s;
-	private ConcurrentHashMap<String, Bill> bills;
 
 	public BillingServerSecureImpl() {
-		s = new PriceSteps();
-		bills = new ConcurrentHashMap<String, Bill>();
 	}
 
 	public PriceSteps getPriceSteps() throws RemoteException {
-		return s;
+		return BillingServer.s;
 	}
 
 	public void unreferenced() {
@@ -37,7 +33,7 @@ public class BillingServerSecureImpl implements BillingServerSecure, Unreference
 		if (startPrice < 0 || endPrice < 0 || fixedPrice < 0 || variablePricePercent < 0) {
 			throw new RemoteException("Error: No negative values allowed!");
 		} else if (endPrice == 0) {
-			for (PriceStep p : s.getPriceSteps()) {
+			for (PriceStep p : BillingServer.s.getPriceSteps()) {
 				if (p.getStartPrice() > startPrice || p.getEndPrice() > startPrice || p.getEndPrice() == 0) {
 					throw new RemoteException("Error: Couldn't create price step! Overlapping steps would occur! Delete conflicting step first!");
 				}
@@ -47,7 +43,7 @@ public class BillingServerSecureImpl implements BillingServerSecure, Unreference
 		else if (startPrice > endPrice) {
 			throw new RemoteException("Error: Start price mustn't be higher than end price!");
 		} else {
-			for (PriceStep p : s.getPriceSteps()) {
+			for (PriceStep p : BillingServer.s.getPriceSteps()) {
 				if (endPrice > p.getStartPrice() && endPrice <= p.getEndPrice() ||
 						startPrice >= p.getStartPrice() && startPrice < p.getEndPrice() ||
 						startPrice < p.getStartPrice() && endPrice >= p.getEndPrice() ||
@@ -56,15 +52,15 @@ public class BillingServerSecureImpl implements BillingServerSecure, Unreference
 				}
 			}
 		}
-		s.add(new PriceStep(startPrice, endPrice, fixedPrice, variablePricePercent));
+		BillingServer.s.add(new PriceStep(startPrice, endPrice, fixedPrice, variablePricePercent));
 	}
 
 	public void deletePriceStep(double startPrice, double endPrice) throws RemoteException {
 		boolean exists = false;
-		for (PriceStep p : s.getPriceSteps()) {
+		for (PriceStep p : BillingServer.s.getPriceSteps()) {
 			if (p.getStartPrice() == startPrice && p.getEndPrice() == endPrice) {
 				exists = true;
-				s.delete(p);
+				BillingServer.s.delete(p);
 			}
 		}
 		if (!exists) {
@@ -73,22 +69,22 @@ public class BillingServerSecureImpl implements BillingServerSecure, Unreference
 	}
 
 	public void billAuction(String user, long auctionID, double price) throws RemoteException {
-		PriceStep ps = s.getPriceStepForPrice(price);
+		PriceStep ps = BillingServer.s.getPriceStepForPrice(price);
 		AuctionCharging ac = new AuctionCharging(auctionID, price, ps.getFixedPrice(), ps.getVariablePricePercent());
-		Bill b = bills.get(user);
+		Bill b = BillingServer.bills.get(user);
 		if (b == null) {
 			b = new Bill();
-			bills.put(user, b);
+			BillingServer.bills.put(user, b);
 		}
-		System.out.println(bills.size() + ", " + b.getAuctionChargings().size());
+		System.out.println(BillingServer.bills.size() + ", " + b.getAuctionChargings().size());
 		System.out.println("billAuction: " + user + " " + auctionID + " " + price);
 		System.out.println("Auction: " + ac.getAuctionId() + " " + ac.getFixedFee() + " " + ac.getVariableFee() + " " + ac.getStrikePrice());
 		b.addAuctionCharging(ac);
 	}
 
 	public Bill getBill(String user) throws RemoteException {
-		Bill b = bills.get(user);
-		System.out.println(bills.size());
+		Bill b = BillingServer.bills.get(user);
+		System.out.println(BillingServer.bills.size());
 		if (b == null) {
 			throw new RemoteException("Error: Unknown user!");
 		}
