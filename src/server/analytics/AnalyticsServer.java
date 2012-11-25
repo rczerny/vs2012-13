@@ -21,6 +21,10 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	private double minSessionTime = 0;
 	private double maxSessionTime = 0;
 	private ArrayList<UserEvent> userEvents = new ArrayList<UserEvent>();
+	private double maxBidPrice = 0;
+	private ArrayList<Double> auctionTime = new ArrayList<Double>();
+	private ArrayList<Boolean> auctionSucess = new ArrayList<Boolean>();
+
 
 	@Override
 	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
@@ -60,6 +64,52 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		if(e instanceof UserEvent) {
 			createSessionTime(e);
 		}
+
+		if(e instanceof BidEvent) {
+			if(e.type.equals("BID_PLACED")) {
+				if(((BidEvent) e).getPrice()>maxBidPrice) {
+					maxBidPrice = ((BidEvent) e).getPrice();
+					StatisticsEvent se = new StatisticsEvent();
+					se.setType("BID_PRICE_MAX");
+					se.setValue(maxBidPrice);
+					processEvent(se);					
+				}
+			}
+		}
+
+		if(e instanceof AuctionEvent) {
+			if(e.type.equals("AUCTION_STARTED")) {
+				auctionTime.add(((AuctionEvent) e).getDuration());
+
+				double sum = 0;
+				for(double s:auctionTime) {
+					sum = sum + s;
+				}
+				double avg = sum / auctionTime.size();
+
+				StatisticsEvent se = new StatisticsEvent();
+				se.setType("AUCTION_TIME_AVG");
+				se.setValue(avg);
+				processEvent(se);
+			}
+
+			if(e.type.equals("AUCTION_ENDED")) {
+				auctionSucess.add(((AuctionEvent) e).isSuccess());
+
+				double suc = 0;
+				for(boolean s:auctionSucess) {
+					if(s==true) {
+						suc = suc +1;
+					}
+				}
+
+				StatisticsEvent se = new StatisticsEvent();
+				se.setType("AUCTION_SUCCESS_RATIO");
+				se.setValue(suc/auctionSucess.size());
+				processEvent(se);
+			}
+		}
+
 		//process Event to subscribed clients
 		for(Client c:clients) {
 			Collection<Subscription> sub = c.getSubscriptions().values();
@@ -81,7 +131,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			for(int i = 0;i<userEvents.size();i++){					
 				if(((UserEvent) e).getUsername().equals(userEvents.get(i).getUsername())) {
 					double session = e.getTimestamp() - userEvents.get(i).getTimestamp();
-					
+
 					if(session < minSessionTime || minSessionTime == 0) {
 						minSessionTime = session;
 						try{
@@ -94,8 +144,8 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 							ex.printStackTrace();
 						}
 					}
-					
-					if(session > minSessionTime) {
+
+					if(session > maxSessionTime) {
 						maxSessionTime = session;
 						try{
 							StatisticsEvent se = new StatisticsEvent();
@@ -107,14 +157,14 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 							ex.printStackTrace();
 						}
 					}
-					
+
 					sessionTime.add(session);
 					userEvents.remove(i);
 					double sum = 0;
 					for(double s:sessionTime) {
 						sum = sum + s;
 					}
-					
+
 					double avg = sum / sessionTime.size();
 					try{
 						StatisticsEvent se = new StatisticsEvent();
@@ -159,23 +209,16 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			String bindingName = args[0];
 			PropertiesParser ps;
 			Registry registry = null;
-			String host = null;
-			int registryPort = 0;
 			try {
 				ps = new PropertiesParser("registry.properties");
-				host = ps.getProperty("registry.host");
-				registryPort = Integer.parseInt(ps.getProperty("registry.port"));
+				int registryPort = Integer.parseInt(ps.getProperty("registry.port"));
 				registry = LocateRegistry.createRegistry(registryPort);
 			} catch (FileNotFoundException e) {
 				System.err.println("Properties file couldn't be found!");
 				e.printStackTrace();
 			} catch (RemoteException e) {
-				try {
-					registry = LocateRegistry.getRegistry(host, registryPort);
-				} catch (RemoteException e1) {
-					System.err.println("Couldn't find or create registry!");
-					e1.printStackTrace();
-				}
+				System.err.println("Couldn't create Registry.");
+				e.printStackTrace();
 			}
 			AnalyticsServerRMI as = new AnalyticsServer();
 
