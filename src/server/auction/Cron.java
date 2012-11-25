@@ -82,7 +82,10 @@ public class Cron implements Runnable
 						try {
 							BidEvent be = new BidEvent();
 							be.setType("BID_WON");
-							be.setUsername(a.getHighestBidder().getUsername());
+							if (a.getHighestBidder() == null)
+								be.setUsername("none");
+							else
+								be.setUsername(a.getHighestBidder().getUsername());
 							be.setAuctionId(a.getId());
 							be.setPrice(a.getHighestBid());
 							as.processEvent(be);

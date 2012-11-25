@@ -103,6 +103,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				double avg = sum / auctionTime.size();
 
 				StatisticsEvent se = new StatisticsEvent();
+				se.setTimestamp(System.currentTimeMillis()/1000);
 				se.setType("AUCTION_TIME_AVG");
 				se.setValue(avg);
 				processEvent(se);

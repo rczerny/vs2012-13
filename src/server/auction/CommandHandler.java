@@ -330,6 +330,7 @@ public class CommandHandler implements Runnable
 					ue.setUsername(u.getUsername());
 					ue.setTimestamp(System.currentTimeMillis()/1000);
 					as.processEvent(ue);
+					u.setLoggedIn(false);
 					break;
 				} catch (RemoteException e1) {
 					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
