@@ -121,6 +121,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("AUCTION_SUCCESS_RATIO");
+				se.setTimestamp(System.currentTimeMillis()/1000);
 				se.setValue(suc/auctionSucess.size());
 				processEvent(se);
 			}
