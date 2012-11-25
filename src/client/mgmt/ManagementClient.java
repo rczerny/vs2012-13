@@ -175,7 +175,41 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 					} else {
 						bss = null;
 					}
-				} else {
+				} else if (commandParts[0].equals("!subscribe")) {
+
+					if (commandParts.length != 2) {
+						System.err.println("Invalid command! Must be !subscribe <filter>");
+					} else {
+						try {
+							as.subscribe(this, commandParts[1]);
+						} catch (RemoteException e) {
+							System.err.println("Couldn't subscribe!");
+							e.printStackTrace();
+						}
+
+					}
+				} else if (commandParts[0].equals("!unsubscribe")) {
+
+					if (commandParts.length != 2) {
+						System.err.println("Invalid command! Must be !unsubscribe <id>");
+					} else {
+						try {
+							as.unsubscribe(this, Integer.parseInt(commandParts[1]));
+						} catch (RemoteException e) {
+							System.err.println("Couldn't unsubscribe!");
+							e.printStackTrace();
+						} catch (NumberFormatException e1) {
+							System.err.println("ID must be a Integer!");
+							e1.printStackTrace();
+						}
+					}
+				} else if (commandParts[0].equals("!auto")) {
+					auto();
+				}else if (commandParts[0].equals("!hide")) {
+					hide();
+				}else if (commandParts[0].equals("!print")) {
+					printBuffer();
+				}else {
 					System.err.println("Unknown command!");
 				}
 				System.out.print(PROMPT);
