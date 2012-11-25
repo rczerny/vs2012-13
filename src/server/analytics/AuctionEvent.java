@@ -8,6 +8,8 @@ public class AuctionEvent extends Event{
 
 	private enum Type {AUCTION_STARTED, AUCTION_ENDED;}
 	private long auctionID;
+	private double duration;
+	private boolean success = false;
 
 	public AuctionEvent(){
 
@@ -27,6 +29,22 @@ public class AuctionEvent extends Event{
 		this.auctionID = auctionID;
 	}
 	
+	public double getDuration() {
+		return duration;
+	}
+
+	public void setDuration(double duration) {
+		this.duration = duration;
+	}
+
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
+
 	public String toString() {
 		String prefix = super.toString();
 		String suffix ="";

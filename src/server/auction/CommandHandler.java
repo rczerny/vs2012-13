@@ -209,6 +209,7 @@ public class CommandHandler implements Runnable
 									ae.setType("AUCTION_STARTED");
 									ae.setAuctionID(a.getId());
 									ae.setTimestamp(System.currentTimeMillis()/1000);
+									ae.setDuration(duration);
 									as.processEvent(ae);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -249,19 +250,17 @@ public class CommandHandler implements Runnable
 									main.sendNotification(a.getHighestBidder(), "!new-bid " + a.getDescription());
 								}
 								 */
-								if (a.getHighestBidder() != null) {
-									try {
-										BidEvent be = new BidEvent();
-										be.setType("BID_OVERBID");
-										be.setUsername(a.getHighestBidder().getUsername());
-										be.setAuctionId(a.getId());
-										be.setPrice(amount);
-										be.setTimestamp(System.currentTimeMillis()/1000);
-										as.processEvent(be);
-									} catch (RemoteException e) {
-										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-										e.printStackTrace();
-									}
+								try {
+									BidEvent be = new BidEvent();
+									be.setType("BID_OVERBID");
+									be.setUsername(a.getHighestBidder().getUsername());
+									be.setAuctionId(a.getId());
+									be.setPrice(amount);
+									be.setTimestamp(System.currentTimeMillis()/1000);
+									as.processEvent(be);
+								} catch (RemoteException e) {
+									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+									e.printStackTrace();
 								}
 
 								a.setHighestBid(amount);

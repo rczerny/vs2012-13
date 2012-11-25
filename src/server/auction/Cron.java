@@ -11,7 +11,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import server.analytics.AnalyticsServer;
-import server.analytics.AnalyticsServerRMI;
 import server.analytics.AuctionEvent;
 import server.analytics.BidEvent;
 import server.billing.BillingServerRMI;
@@ -48,7 +47,7 @@ public class Cron implements Runnable
 					if (new Date().after(a.getDate())) {
 						BillingServerRMI bs = null;
 						BillingServerSecure bss = null;
-						AnalyticsServerRMI as = null;
+						AnalyticsServer as = null;
 						PropertiesParser ps = null;
 						Registry reg = null;
 						try {
@@ -58,7 +57,7 @@ public class Cron implements Runnable
 							reg = LocateRegistry.getRegistry(host, portNr);
 							bs = (BillingServerRMI) reg.lookup(billingBindingName);
 							bss = (BillingServerSecure) bs.login("auctionServer", "auctionServer");
-							as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+							as = (AnalyticsServer) reg.lookup("RemoteAnalyticsServer");
 						} catch (FileNotFoundException e) {
 							System.err.println("properties file not found!");
 						} catch (NumberFormatException e) {
@@ -91,6 +90,9 @@ public class Cron implements Runnable
 							AuctionEvent ae = new AuctionEvent();
 							ae.setType("AUCTION_ENDED");
 							ae.setAuctionID(a.getId());
+							if(a.getHighestBidder()!=null) {
+								ae.setSuccess(true);
+							}
 							as.processEvent(ae);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
