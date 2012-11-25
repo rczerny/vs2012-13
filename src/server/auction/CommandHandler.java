@@ -324,6 +324,17 @@ public class CommandHandler implements Runnable
 			} catch (NumberFormatException e) {
 				sendMessage("Invalid format: Found non-number where number was expected!");
 			} catch (IOException e) {
+				try{
+					UserEvent ue = new UserEvent();
+					ue.setType("USER_DISCONNECTED");
+					ue.setUsername(u.getUsername());
+					ue.setTimestamp(System.currentTimeMillis()/1000);
+					as.processEvent(ue);
+				} catch (RemoteException e1) {
+					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+					e1.printStackTrace();
+				}
+				
 				System.err.println("Error while communicating with the client!");
 				e.printStackTrace();
 			}

@@ -14,6 +14,8 @@ import client.mgmt.ManagementClientInterface;
 import tools.PropertiesParser;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
+	
+	private long startTime;
 
 	private ArrayList<Client> clients = new ArrayList<Client>();
 	private int highestSubscriptionId = 1;
@@ -24,7 +26,11 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	private double maxBidPrice = 0;
 	private ArrayList<Double> auctionTime = new ArrayList<Double>();
 	private ArrayList<Boolean> auctionSucess = new ArrayList<Boolean>();
+	private int bids = 0;
 
+	public AnalyticsServer() {
+		this.startTime = System.currentTimeMillis()/1000;
+	}
 
 	@Override
 	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
@@ -74,6 +80,15 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					se.setValue(maxBidPrice);
 					processEvent(se);					
 				}
+				
+				bids=bids+1;
+				long now = System.currentTimeMillis()/1000;
+				long minutes = (now - startTime)/60;
+				
+				StatisticsEvent se = new StatisticsEvent();
+				se.setType("BID_COUNT_PER_MINUTE");
+				se.setValue(bids/minutes);
+				processEvent(se);	
 			}
 		}
 
