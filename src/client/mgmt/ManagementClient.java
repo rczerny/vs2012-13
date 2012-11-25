@@ -61,7 +61,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		id = 1;
 		buffer = new ArrayList<String>();
-		auto = false;
+		auto = true;
 	}
 
 	public void listen() {
@@ -249,7 +249,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	@Override
 	public void processEvent(Event e) throws RemoteException {
 		if(auto) {
-			System.out.println("mc " + buffer.toString());
+			System.out.println(e.toString());
 		} else {
 			buffer.add(e.toString());
 		}
