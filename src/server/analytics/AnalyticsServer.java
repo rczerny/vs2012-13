@@ -77,6 +77,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					maxBidPrice = ((BidEvent) e).getPrice();
 					StatisticsEvent se = new StatisticsEvent();
 					se.setType("BID_PRICE_MAX");
+					se.setTimestamp(System.currentTimeMillis()/1000);
 					se.setValue(maxBidPrice);
 					processEvent(se);					
 				}
@@ -87,6 +88,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("BID_COUNT_PER_MINUTE");
+				se.setTimestamp(System.currentTimeMillis()/1000);
 				se.setValue(bids/minutes);
 				processEvent(se);	
 			}
@@ -154,6 +156,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 						try{
 							StatisticsEvent se = new StatisticsEvent();
 							se.setType("USER_SESSIONTIME_MIN");
+							se.setTimestamp(System.currentTimeMillis()/1000);
 							se.setValue(session);
 							processEvent(se);
 						} catch (RemoteException ex) {
@@ -168,6 +171,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 							StatisticsEvent se = new StatisticsEvent();
 							se.setType("USER_SESSIONTIME_MAX");
 							se.setValue(session);
+							se.setTimestamp(System.currentTimeMillis()/1000);
 							processEvent(se);
 						} catch (RemoteException ex) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -187,6 +191,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 						StatisticsEvent se = new StatisticsEvent();
 						se.setType("USER_SESSIONTIME_AVG");
 						se.setValue(avg);
+						se.setTimestamp(System.currentTimeMillis()/1000);
 						processEvent(se);
 					} catch (RemoteException ex) {
 						System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
