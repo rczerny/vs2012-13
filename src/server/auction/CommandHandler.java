@@ -250,17 +250,19 @@ public class CommandHandler implements Runnable
 									main.sendNotification(a.getHighestBidder(), "!new-bid " + a.getDescription());
 								}
 								 */
-								try {
-									BidEvent be = new BidEvent();
-									be.setType("BID_OVERBID");
-									be.setUsername(a.getHighestBidder().getUsername());
-									be.setAuctionId(a.getId());
-									be.setPrice(amount);
-									be.setTimestamp(System.currentTimeMillis()/1000);
-									as.processEvent(be);
-								} catch (RemoteException e) {
-									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-									e.printStackTrace();
+								if (a.getHighestBidder() != null) {
+									try {
+										BidEvent be = new BidEvent();
+										be.setType("BID_OVERBID");
+										be.setUsername(a.getHighestBidder().getUsername());
+										be.setAuctionId(a.getId());
+										be.setPrice(amount);
+										be.setTimestamp(System.currentTimeMillis()/1000);
+										as.processEvent(be);
+									} catch (RemoteException e) {
+										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+										e.printStackTrace();
+									}
 								}
 
 								a.setHighestBid(amount);
@@ -336,7 +338,7 @@ public class CommandHandler implements Runnable
 					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 					e1.printStackTrace();
 				}
-				
+
 				System.err.println("Error while communicating with the client!");
 				e.printStackTrace();
 			}

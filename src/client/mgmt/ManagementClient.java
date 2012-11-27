@@ -150,7 +150,6 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 								}
 							} catch (RemoteException e) {
 								System.err.println("Couldn't bill user! Please make sure the given user exists!");
-								e.printStackTrace();
 							}
 						}
 					}
