@@ -266,9 +266,4 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			}
 		}
 	}
-
-	@Override
-	public double getMin() throws RemoteException {
-		return minSessionTime;
-	}
 }
