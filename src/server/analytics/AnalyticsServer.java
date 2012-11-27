@@ -89,7 +89,11 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("BID_COUNT_PER_MINUTE");
 				se.setTimestamp(System.currentTimeMillis()/1000);
-				se.setValue(bids/minutes);
+				if (minutes < 1) {
+					se.setValue(0);
+				} else {
+					se.setValue(bids/minutes);
+				}
 				processEvent(se);	
 			}
 		}
