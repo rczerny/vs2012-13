@@ -4,7 +4,6 @@ import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class BillingServerSecureImpl implements BillingServerSecure, Unreferenced 
 {
@@ -76,15 +75,11 @@ public class BillingServerSecureImpl implements BillingServerSecure, Unreference
 			b = new Bill();
 			BillingServer.bills.put(user, b);
 		}
-		System.out.println(BillingServer.bills.size() + ", " + b.getAuctionChargings().size());
-		System.out.println("billAuction: " + user + " " + auctionID + " " + price);
-		System.out.println("Auction: " + ac.getAuctionId() + " " + ac.getFixedFee() + " " + ac.getVariableFee() + " " + ac.getStrikePrice());
 		b.addAuctionCharging(ac);
 	}
 
 	public Bill getBill(String user) throws RemoteException {
 		Bill b = BillingServer.bills.get(user);
-		System.out.println(BillingServer.bills.size());
 		if (b == null) {
 			throw new RemoteException("Error: Unknown user!");
 		}

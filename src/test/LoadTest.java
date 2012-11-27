@@ -1,6 +1,7 @@
 package test;
 
 import java.io.FileNotFoundException;
+import java.rmi.RemoteException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,6 +17,7 @@ public class LoadTest
 	private boolean shutdown = false;
 	private int tcpPort = 0;
 	private String host = null;
+	private String analyticsBindingName = "";
 
 	public LoadTest(String host, int tcpPort, int clients, int auctionsPerMin, int auctionDuration, int updateIntervalSec, int bidsPerMin) {
 		this.clients = clients;
@@ -28,7 +30,14 @@ public class LoadTest
 	}
 
 	public void run() {
-		ExecutorService pool = Executors.newFixedThreadPool(clients);
+		ExecutorService pool = Executors.newCachedThreadPool();
+		try {
+			Thread t = new Thread(new MgmtTestClient(this));
+			t.start();
+		} catch (RemoteException e) {
+			System.err.println("Error: Couldn't start ManagementClient test");
+			e.printStackTrace();
+		}
 		for (int i = 0; i < clients; i++) {
 			pool.execute(new LoadTestBidder(host, tcpPort, this));
 		}
@@ -82,7 +91,16 @@ public class LoadTest
 		this.shutdown = shutdown;
 	}
 
+	public String getAnalyticsBindingName() {
+		return analyticsBindingName;
+	}
+
+	public void setAnalyticsBindingName(String analyticsBindingName) {
+		this.analyticsBindingName = analyticsBindingName;
+	}
+
 	public static void main(String[] args) {
+		
 		if (args.length != 3) {
 			System.err.println("Invalid arguments!");
 			System.err.println("USAGE: java ClientMain <hostname> <tcpPort> <analyticsBindingName>");
@@ -99,6 +117,8 @@ public class LoadTest
 				int updateIntervalSec = Integer.parseInt(ps.getProperty("updateIntervalSec"));
 				int bidsPerMin = Integer.parseInt(ps.getProperty("bidsPerMin"));
 				LoadTest lt = new LoadTest(host, tcpPort, clients, auctionsPerMin, auctionDuration, updateIntervalSec, bidsPerMin);
+				//Runtime.getRuntime().addShutdownHook(lt.new Shutdown(lt));
+				lt.setAnalyticsBindingName(args[2]);
 				lt.run();
 			} catch (FileNotFoundException e) {
 				System.err.println("Properties file couldn't be found!");
@@ -108,5 +128,11 @@ public class LoadTest
 				System.exit(1);
 			}
 		}
+	}
+	
+	public class Shutdown extends Thread {
+		private LoadTest lt = null;
+		public Shutdown(LoadTest lt) { this.lt = lt; }
+	    public void run() { lt.setShutdown(true); }
 	}
 }

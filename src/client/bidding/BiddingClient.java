@@ -57,7 +57,7 @@ public class BiddingClient implements Runnable
 			br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 			keys = new BufferedReader(new InputStreamReader(System.in));
-			sock.setSoTimeout(500);
+			//sock.setSoTimeout(1000);
 		} catch (IOException e) {
 			System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 			//e.printStackTrace();
@@ -79,7 +79,7 @@ public class BiddingClient implements Runnable
 				bw.write(input);
 				bw.newLine();
 				bw.flush();
-				while ((answer = br.readLine()) != null) {
+				while (!(answer = br.readLine()).equals("ready")) {
 					if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
 						username = input.trim().split("\\s+")[1];
 						PROMPT =  username + PROMPT;
@@ -94,7 +94,7 @@ public class BiddingClient implements Runnable
 			} catch (UnknownHostException e) {
 				System.err.println("Host not found!");
 			} catch(SocketTimeoutException e) {
-				;		
+				System.out.println("BiddingClient SocketTimeout!");
 			} catch (IOException e) {
 				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 				//e.printStackTrace();
