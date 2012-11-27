@@ -56,6 +56,8 @@ public class Subscription {
 				} else {
 					System.out.println("Filter muss in Runden Klammern stehen!");
 				}
+			}else {
+				System.out.println("Filter muss in '' stehen!");
 			}
 		}
 	}
