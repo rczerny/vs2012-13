@@ -101,7 +101,7 @@ public class Cron implements Runnable
 							as.processEvent(ae);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-							e.printStackTrace();
+							//e.printStackTrace();
 						}
 
 						main.auctions.remove(a);

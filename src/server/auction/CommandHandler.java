@@ -157,7 +157,7 @@ public class CommandHandler implements Runnable
 										as.processEvent(ue);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-										e.printStackTrace();
+										//e.printStackTrace();
 									}
 								}
 							}
@@ -193,7 +193,7 @@ public class CommandHandler implements Runnable
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-							e.printStackTrace();
+							//e.printStackTrace();
 						}
 					}
 					////////////////////////////////////////////
@@ -240,7 +240,7 @@ public class CommandHandler implements Runnable
 									as.processEvent(ae);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-									e.printStackTrace();
+									//e.printStackTrace();
 								} catch (ConcurrentModificationException e) {
 									;
 								}
@@ -299,7 +299,7 @@ public class CommandHandler implements Runnable
 										as.processEvent(be);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-										e.printStackTrace();
+										//e.printStackTrace();
 									}
 								}
 
@@ -321,7 +321,7 @@ public class CommandHandler implements Runnable
 									as.processEvent(be);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-									e.printStackTrace();
+									//e.printStackTrace();
 								}
 
 							} else {
@@ -356,7 +356,7 @@ public class CommandHandler implements Runnable
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-							e.printStackTrace();
+							//e.printStackTrace();
 						}
 						u.setLoggedIn(false);
 						//u.setSocket(null);
@@ -385,7 +385,7 @@ public class CommandHandler implements Runnable
 					break;
 				} catch (RemoteException e1) {
 					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-					e1.printStackTrace();
+					//e1.printStackTrace();
 				}
 
 				System.err.println("Error while communicating with the client!");
