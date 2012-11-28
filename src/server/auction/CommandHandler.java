@@ -153,7 +153,7 @@ public class CommandHandler implements Runnable
 										UserEvent ue = new UserEvent();
 										ue.setType("USER_LOGIN");
 										ue.setUsername(u.getUsername());
-										ue.setTimestamp(System.currentTimeMillis()/1000);
+										ue.setTimestamp(System.currentTimeMillis());
 										as.processEvent(ue);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -189,7 +189,7 @@ public class CommandHandler implements Runnable
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
 							ue.setUsername(u.getUsername());
-							ue.setTimestamp(System.currentTimeMillis()/1000);
+							ue.setTimestamp(System.currentTimeMillis());
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -235,7 +235,7 @@ public class CommandHandler implements Runnable
 									AuctionEvent ae = new AuctionEvent();
 									ae.setType("AUCTION_STARTED");
 									ae.setAuctionID(a.getId());
-									ae.setTimestamp(System.currentTimeMillis()/1000);
+									ae.setTimestamp(System.currentTimeMillis());
 									ae.setDuration(duration);
 									as.processEvent(ae);
 								} catch (RemoteException e) {
@@ -295,7 +295,7 @@ public class CommandHandler implements Runnable
 										be.setUsername(a.getHighestBidder().getUsername());
 										be.setAuctionId(a.getId());
 										be.setPrice(amount);
-										be.setTimestamp(System.currentTimeMillis()/1000);
+										be.setTimestamp(System.currentTimeMillis());
 										as.processEvent(be);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -317,7 +317,7 @@ public class CommandHandler implements Runnable
 									be.setUsername(u.getUsername());
 									be.setAuctionId(a.getId());
 									be.setPrice(amount);
-									be.setTimestamp(System.currentTimeMillis()/1000);
+									be.setTimestamp(System.currentTimeMillis());
 									as.processEvent(be);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -352,7 +352,7 @@ public class CommandHandler implements Runnable
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
 							ue.setUsername(u.getUsername());
-							ue.setTimestamp(System.currentTimeMillis()/1000);
+							ue.setTimestamp(System.currentTimeMillis());
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -379,7 +379,7 @@ public class CommandHandler implements Runnable
 					UserEvent ue = new UserEvent();
 					ue.setType("USER_DISCONNECTED");
 					ue.setUsername(u.getUsername());
-					ue.setTimestamp(System.currentTimeMillis()/1000);
+					ue.setTimestamp(System.currentTimeMillis());
 					as.processEvent(ue);
 					u.setLoggedIn(false);
 					break;

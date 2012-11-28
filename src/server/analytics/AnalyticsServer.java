@@ -19,7 +19,6 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 	private long startTime;
 
-	//Set<User> users = Collections.synchronizedSet(new HashSet<User>());
 	private List<Client> clients = Collections.synchronizedList(new ArrayList<Client>());
 	private int highestSubscriptionId = 1;
 	private List<Double> sessionTime = Collections.synchronizedList(new ArrayList<Double>());
@@ -79,7 +78,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					maxBidPrice = ((BidEvent) e).getPrice();
 					StatisticsEvent se = new StatisticsEvent();
 					se.setType("BID_PRICE_MAX");
-					se.setTimestamp(System.currentTimeMillis()/1000);
+					se.setTimestamp(System.currentTimeMillis());
 					se.setValue(maxBidPrice);
 					processEvent(se);					
 				}
@@ -90,7 +89,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("BID_COUNT_PER_MINUTE");
-				se.setTimestamp(System.currentTimeMillis()/1000);
+				se.setTimestamp(System.currentTimeMillis());
 				if (minutes < 1) {
 					se.setValue(0);
 				} else {
@@ -111,7 +110,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				double avg = sum / auctionTime.size();
 
 				StatisticsEvent se = new StatisticsEvent();
-				se.setTimestamp(System.currentTimeMillis()/1000);
+				se.setTimestamp(System.currentTimeMillis());
 				se.setType("AUCTION_TIME_AVG");
 				se.setValue(avg);
 				processEvent(se);
@@ -129,7 +128,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("AUCTION_SUCCESS_RATIO");
-				se.setTimestamp(System.currentTimeMillis()/1000);
+				se.setTimestamp(System.currentTimeMillis());
 				se.setValue(suc/auctionSucess.size());
 				processEvent(se);
 			}
@@ -162,7 +161,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 						try{
 							StatisticsEvent se = new StatisticsEvent();
 							se.setType("USER_SESSIONTIME_MIN");
-							se.setTimestamp(System.currentTimeMillis()/1000);
+							se.setTimestamp(System.currentTimeMillis());
 							se.setValue(session);
 							processEvent(se);
 						} catch (RemoteException ex) {
@@ -177,7 +176,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 							StatisticsEvent se = new StatisticsEvent();
 							se.setType("USER_SESSIONTIME_MAX");
 							se.setValue(session);
-							se.setTimestamp(System.currentTimeMillis()/1000);
+							se.setTimestamp(System.currentTimeMillis());
 							processEvent(se);
 						} catch (RemoteException ex) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -197,7 +196,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 						StatisticsEvent se = new StatisticsEvent();
 						se.setType("USER_SESSIONTIME_AVG");
 						se.setValue(avg);
-						se.setTimestamp(System.currentTimeMillis()/1000);
+						se.setTimestamp(System.currentTimeMillis());
 						processEvent(se);
 					} catch (RemoteException ex) {
 						System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");

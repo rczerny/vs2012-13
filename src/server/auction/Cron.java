@@ -88,6 +88,7 @@ public class Cron implements Runnable
 								be.setUsername(a.getHighestBidder().getUsername());
 							be.setAuctionId(a.getId());
 							be.setPrice(a.getHighestBid());
+							be.setTimestamp(System.currentTimeMillis());
 							as.processEvent(be);
 
 							AuctionEvent ae = new AuctionEvent();
@@ -96,7 +97,7 @@ public class Cron implements Runnable
 							if(a.getHighestBidder()!=null) {
 								ae.setSuccess(true);
 							}
-							ae.setTimestamp(System.currentTimeMillis()/1000);
+							ae.setTimestamp(System.currentTimeMillis());
 							as.processEvent(ae);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");

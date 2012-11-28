@@ -1,6 +1,8 @@
 package server.analytics;
 
 import java.io.Serializable;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 
 abstract public class Event implements Serializable{
 	/**
@@ -32,7 +34,13 @@ abstract public class Event implements Serializable{
 		this.timestamp = timestamp;
 	}
 	
+	public String getEndString() {
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm z");
+		Date out = new Date(timestamp);
+		return simpleDateFormat.format(out);
+	}
+	
 	public String toString(){
-		return type + ": " + timestamp + " - ";
+		return type + ": " + getEndString() + " - ";
 	}
 }
