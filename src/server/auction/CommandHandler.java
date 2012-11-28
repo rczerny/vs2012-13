@@ -52,7 +52,7 @@ public class CommandHandler implements Runnable
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
 			reg = LocateRegistry.getRegistry(host, portNr);
-			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer"); // 
 		} catch (FileNotFoundException e) {
 			System.out.println("properties file not found!");
 			e.printStackTrace();

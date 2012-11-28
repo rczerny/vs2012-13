@@ -1,7 +1,10 @@
 package server.analytics;
 
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.rmi.AccessException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -12,6 +15,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
+import server.billing.BillingServerSecureImpl;
 import tools.PropertiesParser;
 import client.mgmt.ManagementClientInterface;
 
@@ -30,9 +34,11 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	private List<Double> auctionTime = Collections.synchronizedList(new ArrayList<Double>());
 	private List<Boolean> auctionSucess = Collections.synchronizedList(new ArrayList<Boolean>());
 	private int bids = 0;
+	private String bindingName = "";
 
-	public AnalyticsServer() {
+	public AnalyticsServer(String bindingName) {
 		this.startTime = System.currentTimeMillis()/1000;
+		this.bindingName = bindingName;
 	}
 
 	@Override
@@ -140,7 +146,11 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			Collection<Subscription> sub = c.getSubscriptions().values();
 			for(Subscription s:sub) {
 				if(s.getFilter().contains(e.type)) {
-					c.getmClient().processEvent(e);
+					try {
+						c.getmClient().processEvent(e);
+					} catch (RemoteException ex) {
+						c.getSubscriptions().clear();
+					}
 				}
 			}
 		}
@@ -224,7 +234,33 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 		return "unsubscribe failed";
 	}
-
+	
+	public void shutdown() {
+		PropertiesParser ps = null;
+		try {
+			ps = new PropertiesParser("registry.properties");
+		} catch (FileNotFoundException e1) {
+			System.err.println("Error: Properties file not found!");
+		}
+		String host = ps.getProperty("registry.host");
+		try {
+			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
+			Naming.unbind("//" + host + ":" + portNr + "/" + bindingName);
+			UnicastRemoteObject.unexportObject(this, true);
+		} catch (RemoteException e) {
+			;
+		} catch (MalformedURLException e) {
+			System.err.println("Error: Couldn't find registry!");
+			e.printStackTrace();
+		} catch (NotBoundException e) {
+			;
+		} catch (NumberFormatException e) {
+			System.err.println("Port non-numeric!");
+		}
+		System.out.println("Shutting down!");
+		System.exit(0);
+	}
+	
 	/**
 	 * @param args
 	 */
@@ -244,7 +280,6 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				host = ps.getProperty("registry.host");
 				registryPort = Integer.parseInt(ps.getProperty("registry.port"));
 				registry = LocateRegistry.createRegistry(registryPort);
-				
 			} catch (FileNotFoundException e) {
 				System.err.println("Properties file couldn't be found!");
 				e.printStackTrace();
@@ -257,9 +292,11 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				}
 			}
 			
-			AnalyticsServerRMI as = new AnalyticsServer();
+			AnalyticsServerRMI as = new AnalyticsServer(bindingName);
 
 			AnalyticsServerRMI ras = null;
+			Thread cl = new Thread(new ConsoleListener(as));
+			cl.start();
 			try {
 				ras = (AnalyticsServerRMI) UnicastRemoteObject.exportObject(as, 0);
 			} catch (RemoteException e) {

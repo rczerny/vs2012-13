@@ -42,7 +42,7 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 	}
 
 	public void unreferenced() {
-		shutdown();
+		//shutdown();
 	}
 
 	public BillingServerSecure login(String username, String password) {
@@ -89,17 +89,16 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 			UnicastRemoteObject.unexportObject(this, true);
 			UnicastRemoteObject.unexportObject(registry, true);
 		} catch (RemoteException e) {
-			System.err.println("Error: Couldn't unbind from registry!");
-			e.printStackTrace();
+			;
 		} catch (MalformedURLException e) {
 			System.err.println("Error: Couldn't find registry!");
 			e.printStackTrace();
 		} catch (NotBoundException e) {
-			System.err.println("Error: Registry not bound!");
-			e.printStackTrace();
+			;
 		} catch (NumberFormatException e) {
 			System.err.println("Port non-numeric!");
 		}
+		System.out.println("Shutting down!");
 		System.exit(0);
 	}
 

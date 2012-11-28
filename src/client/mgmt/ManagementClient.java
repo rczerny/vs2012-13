@@ -37,6 +37,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	private int id = 0;
 	private ArrayList<String> buffer = null;
 	private boolean auto;
+	private String username = "";
 
 	public ManagementClient(String analyticsBindingName, String billingBindingName) throws RemoteException{		
 		keys = new BufferedReader(new InputStreamReader(System.in));
@@ -68,7 +69,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		try {
 			String command = "";
 			String[] commandParts;
-			while ((command = keys.readLine()) != "\n") {
+			while (!(command = keys.readLine()).equals("!exit")) {
 				command = command.trim(); // remove leading and trailing whitespaces
 				commandParts = command.split("\\s+");
 				if (commandParts[0].equals("!login")) {
@@ -84,6 +85,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 							} else {
 								System.out.println(commandParts[1] + " successfully logged in");
 								PROMPT = commandParts[1] + "> ";
+								username = commandParts[1];
 							}
 						}
 					}
@@ -91,9 +93,13 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 					if (bss == null) {
 						System.err.println("You need to login first!");
 					} else {
-						System.out.printf("%-9s %-9s %-9s %-9s%n", "Min_Price", "Max_Price", "Fee_Fixed", "Fee_Variable");
-						for (PriceStep p : bss.getPriceSteps().getPriceSteps()) {
-							System.out.printf("%-9.0f %-9.0f %-9.1f %-9.1f%n", p.getStartPrice(), p.getEndPrice(), p.getFixedPrice(), p.getVariablePricePercent());
+						if (commandParts.length != 1) {
+							System.err.println("Invalid command! Must be !steps with no arguments!");
+						} else {
+							System.out.printf("%-9s %-9s %-9s %-9s%n", "Min_Price", "Max_Price", "Fee_Fixed", "Fee_Variable");
+							for (PriceStep p : bss.getPriceSteps().getPriceSteps()) {
+								System.out.printf("%-9.0f %-9.0f %-9.1f %-9.1f%n", p.getStartPrice(), p.getEndPrice(), p.getFixedPrice(), p.getVariablePricePercent());
+							}
 						}
 					}
 				} else if (commandParts[0].equals("!addStep")) {
@@ -109,10 +115,11 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 								double fixedPrice = Double.parseDouble(commandParts[3]);
 								double variablePricePercent = Double.parseDouble(commandParts[4]);
 								bss.createPriceStep(startPrice, endPrice, fixedPrice, variablePricePercent);
+								System.out.println("Step (" + startPrice + " " + endPrice + "] successfully created");
 							} catch (NumberFormatException e) {
 								System.err.println("Error! Non-numeric argument, where numeric argument expected!");
 							} catch (RemoteException e) {
-								System.err.println("Couldn't create price step! Please check if price steps are overlapping!");
+								System.err.println("ERROR: Couldn't create price step! Are values positive and non-overlapping?");
 							}
 						}
 					}
@@ -127,10 +134,11 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 								double startPrice = Double.parseDouble(commandParts[1]);
 								double endPrice = Double.parseDouble(commandParts[2]);
 								bss.deletePriceStep(startPrice, endPrice);
+								System.out.println("PriceStep (" + startPrice + " " + endPrice + "] successfully removed");
 							} catch (NumberFormatException e) {
 								System.err.println("Error! Non-numeric argument, where numeric argument expected!");
 							} catch (RemoteException e) {
-								System.err.println("Couldn't delete price step! Please make sure the given price step exists!");
+								System.err.println("ERROR: Couldn't delete price step! Please make sure the given price step exists!");
 							}
 						}
 					}
@@ -149,7 +157,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 											ac.getVariableFee(), ac.getVariableFee() + ac.getFixedFee());
 								}
 							} catch (RemoteException e) {
-								System.err.println("Couldn't bill user! Please make sure the given user exists!");
+								System.err.println("ERROR: Couldn't bill user! Please make sure the given user exists!");
 							}
 						}
 					}
@@ -163,8 +171,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 							try {
 								bss.billAuction(commandParts[1], Long.parseLong(commandParts[2]), Double.parseDouble(commandParts[3]));
 							} catch (RemoteException e) {
-								System.err.println("Couldn't bill user! Please make sure the given user exists!");
-								e.printStackTrace();
+								System.err.println("ERROR: Couldn't bill user! Please make sure the given user exists!");
 							}
 						}
 					}
@@ -173,6 +180,11 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 						System.err.println("You need to login first!");
 					} else {
 						bss = null;
+						PROMPT = "> ";
+						username = "";
+						System.out.println(username + " Successfully logged out");
+						if (commandParts.length != 1)
+							System.out.println("Please use only !logout without any arguments next time!");
 					}
 				} else if (commandParts[0].equals("!subscribe")) {
 
@@ -182,8 +194,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 						try {
 							as.subscribe(this, commandParts[1]);
 						} catch (RemoteException e) {
-							System.err.println("Couldn't subscribe!");
-							e.printStackTrace();
+							System.err.println("ERROR: Couldn't subscribe!");
 						}
 
 					}
@@ -195,11 +206,9 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 						try {
 							as.unsubscribe(this, Integer.parseInt(commandParts[1]));
 						} catch (RemoteException e) {
-							System.err.println("Couldn't unsubscribe!");
-							e.printStackTrace();
+							System.err.println("ERROR: Couldn't unsubscribe!");
 						} catch (NumberFormatException e1) {
 							System.err.println("ID must be a Integer!");
-							e1.printStackTrace();
 						}
 					}
 				} else if (commandParts[0].equals("!auto")) {
@@ -214,9 +223,14 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 				System.out.print(PROMPT);
 			}
 		} catch (IOException e) {
-			System.err.println("Console I/O Error!");
-			e.printStackTrace();
+			System.err.println("ERROR: Console I/O Error!");
 		}
+		System.out.println("Shutting down!");
+		as = null;
+		bs = null;
+		bss = null;
+		reg = null;
+		System.exit(0);
 	}
 
 	public String subscribe(String filter) {

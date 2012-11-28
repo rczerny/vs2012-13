@@ -1,4 +1,4 @@
-package server.billing;
+package server.analytics;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,11 +6,11 @@ import java.io.InputStreamReader;
 
 public class ConsoleListener implements Runnable 
 {
-	private BillingServer main = null;
+	private AnalyticsServer main = null;
 	private BufferedReader br = null;
 
-	public ConsoleListener(BillingServerRMI bs) {
-		this.main = (BillingServer)bs;
+	public ConsoleListener(AnalyticsServerRMI bs) {
+		this.main = (AnalyticsServer)bs;
 		br = new BufferedReader(new InputStreamReader(System.in));
 	}
 
