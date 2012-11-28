@@ -24,15 +24,15 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 	private BillingServerSecure billingServerSecure = null;
 	public static PriceSteps s;
 	public static ConcurrentHashMap<String, Bill> bills;
-	
+
 	public void setBindingName(String bindingName) {
 		this.bindingName = bindingName;
 	}
-	
+
 	public String getBindingName() {
 		return bindingName;
 	}
-	
+
 	public Registry getRegistry() {
 		return registry;
 	}
@@ -68,10 +68,10 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 			System.err.println("Error: MD5 not supported!");
 			e.printStackTrace();
 		}
-		
+
 		return result;
 	}
-	
+
 	public void shutdown() {
 		PropertiesParser ps = null;
 		try {
@@ -123,6 +123,7 @@ public class BillingServer implements BillingServerRMI, Unreferenced
 				e.printStackTrace();
 			} catch (RemoteException e) {
 				try {
+					//registry = LocateRegistry.createRegistry(registryPort);
 					registry = LocateRegistry.getRegistry(host, registryPort);
 				} catch (RemoteException e1) {
 					System.err.println("Couldn't find or create registry!");

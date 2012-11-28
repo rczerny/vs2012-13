@@ -21,11 +21,11 @@ public class Subscription {
 	}
 
 	private void createFilter(String f) {
-		String[] filterParts = f.split("\\|");
-		for(int i = 0;i<filterParts.length;i++){
-			if(filterParts[i].charAt(0) == '\'') {
-				filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
+		if(f.charAt(0) == '\'' && f.charAt(f.length()-1) == '\'') {
+			f = f.substring(1, f.length()-1);
 
+			String[] filterParts = f.split("\\|");
+			for(int i = 0;i<filterParts.length;i++){
 				//remove ( and )
 				if(filterParts[i].charAt(0) == '(') {
 					filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
@@ -54,11 +54,12 @@ public class Subscription {
 					}
 
 				} else {
-					System.out.println("Filter muss in Runden Klammern stehen!");
+					System.out.println("Regex muss in Runden Klammern stehen!");
 				}
-			}else {
-				System.out.println("Filter muss in '' stehen!");
+
 			}
+		}else {
+			System.out.println("Filter muss in '' stehen!");
 		}
 	}
 

@@ -16,7 +16,7 @@ import tools.PropertiesParser;
 import client.mgmt.ManagementClientInterface;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
-	
+
 	private long startTime;
 
 	//Set<User> users = Collections.synchronizedSet(new HashSet<User>());
@@ -83,11 +83,11 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					se.setValue(maxBidPrice);
 					processEvent(se);					
 				}
-				
+
 				bids=bids+1;
 				long now = System.currentTimeMillis()/1000;
 				long minutes = (now - startTime)/60;
-				
+
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("BID_COUNT_PER_MINUTE");
 				se.setTimestamp(System.currentTimeMillis()/1000);
@@ -237,17 +237,26 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			String bindingName = args[0];
 			PropertiesParser ps;
 			Registry registry = null;
+			String host = null;
+			int registryPort = 0;
 			try {
 				ps = new PropertiesParser("registry.properties");
-				int registryPort = Integer.parseInt(ps.getProperty("registry.port"));
+				host = ps.getProperty("registry.host");
+				registryPort = Integer.parseInt(ps.getProperty("registry.port"));
 				registry = LocateRegistry.createRegistry(registryPort);
+				
 			} catch (FileNotFoundException e) {
 				System.err.println("Properties file couldn't be found!");
 				e.printStackTrace();
 			} catch (RemoteException e) {
-				System.err.println("Couldn't create Registry.");
-				e.printStackTrace();
+				try {
+					registry = LocateRegistry.getRegistry(host, registryPort);
+				} catch (RemoteException e1) {
+					System.err.println("Couldn't find or create registry!");
+					e1.printStackTrace();
+				}
 			}
+			
 			AnalyticsServerRMI as = new AnalyticsServer();
 
 			AnalyticsServerRMI ras = null;
