@@ -50,20 +50,26 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		}	
 
 		Subscription sub = new Subscription(highestSubscriptionId, filter, client);
-
+		String answer = sub.createFilter(filter);
+		int id = highestSubscriptionId;
+		
 		if(!sub.filter.isEmpty()) {
-
 			client.getSubscriptions().put(highestSubscriptionId, sub);
 		}
 
-		int id = highestSubscriptionId;
-		System.out.println(this.clients.toString());
-
 		if(sub.filter.isEmpty()) {
+			if(answer.equals("ALL")) {
+				return "Creating subscription failed! - You were already subscribed for ALL of these events!";
+			}
+						
 			return "Creating subscription failed!";
 		}
-
+		
 		highestSubscriptionId++;
+		if(answer.equals("SOME")) {
+			return "Creating subscription failed for some events! - You were already subscribed for these events!";
+		}
+		
 		return "Created subscription with ID " + id + " for events using filter " + filter;
 	}
 
@@ -162,7 +168,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 							StatisticsEvent se = new StatisticsEvent();
 							se.setType("USER_SESSIONTIME_MIN");
 							se.setTimestamp(System.currentTimeMillis());
-							se.setValue(session);
+							se.setValue(session/1000);
 							processEvent(se);
 						} catch (RemoteException ex) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
@@ -175,7 +181,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 						try{
 							StatisticsEvent se = new StatisticsEvent();
 							se.setType("USER_SESSIONTIME_MAX");
-							se.setValue(session);
+							se.setValue(session/1000);
 							se.setTimestamp(System.currentTimeMillis());
 							processEvent(se);
 						} catch (RemoteException ex) {
@@ -195,7 +201,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					try{
 						StatisticsEvent se = new StatisticsEvent();
 						se.setType("USER_SESSIONTIME_AVG");
-						se.setValue(avg);
+						se.setValue(avg/1000);
 						se.setTimestamp(System.currentTimeMillis());
 						processEvent(se);
 					} catch (RemoteException ex) {
@@ -243,7 +249,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				host = ps.getProperty("registry.host");
 				registryPort = Integer.parseInt(ps.getProperty("registry.port"));
 				registry = LocateRegistry.createRegistry(registryPort);
-				
+
 			} catch (FileNotFoundException e) {
 				System.err.println("Properties file couldn't be found!");
 				e.printStackTrace();
@@ -255,7 +261,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					e1.printStackTrace();
 				}
 			}
-			
+
 			AnalyticsServerRMI as = new AnalyticsServer();
 
 			AnalyticsServerRMI ras = null;

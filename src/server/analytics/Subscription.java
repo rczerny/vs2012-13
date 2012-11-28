@@ -17,50 +17,62 @@ public class Subscription {
 
 		this.c = c;
 		filter = new ArrayList<String>();
-		createFilter(f);
 	}
 
-	private void createFilter(String f) {
+	public String createFilter(String f) {
+		String answer = "";
+		boolean dublicates = false;
+		
 		if(f.charAt(0) == '\'' && f.charAt(f.length()-1) == '\'') {
 			f = f.substring(1, f.length()-1);
+		}
 
-			String[] filterParts = f.split("\\|");
-			for(int i = 0;i<filterParts.length;i++){
-				//remove ( and )
-				if(filterParts[i].charAt(0) == '(') {
-					filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
+		String[] filterParts = f.split("\\|");
+		for(int i = 0;i<filterParts.length;i++){
+			//remove ( and )
+			if(filterParts[i].charAt(0) == '(') {
+				filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
+			}
 
-					//if last char of pattern is * change to .*
-					if(filterParts[i].charAt(filterParts[i].length()-1) == '*') {
-						filterParts[i]=filterParts[i].substring(0, filterParts[i].length()-1) + ".*";
-					}
+			//if last char of pattern is * change to .*
+			if(filterParts[i].charAt(filterParts[i].length()-1) == '*') {
+				filterParts[i]=filterParts[i].substring(0, filterParts[i].length()-1) + ".*";
+			}
 
-					//for each type of types check if matches with pattern
-					for(String type:types) {
-						if(type.matches(filterParts[i])) {
-							//add type to filter
-							if(!filter.contains(type)) {
-								boolean alreadyExists = false;
-								for(Subscription s:c.getSubscriptions().values()) {
-									if(s.getFilter().contains(type)) {
-										alreadyExists = true;
-									}
-								}
-								if(!alreadyExists) {
-									filter.add(type);
-								}
+			
+			//for each type of types check if matches with pattern
+			for(String type:types) {
+				if(type.matches(filterParts[i])) {
+					//add type to filter
+					if(!filter.contains(type)) {
+						boolean alreadyExists = false;
+						for(Subscription s:c.getSubscriptions().values()) {
+							if(s.getFilter().contains(type)) {
+								alreadyExists = true;
+								dublicates = true;
 							}
 						}
+						if(!alreadyExists) {
+							filter.add(type);
+						}
 					}
-
-				} else {
-					System.out.println("Regex muss in Runden Klammern stehen!");
 				}
-
 			}
-		}else {
-			System.out.println("Filter muss in '' stehen!");
+
+
+
 		}
+		
+		if(dublicates) {
+			if(filter.isEmpty()) {
+				answer = "ALL";
+			} else {
+				answer = "SOME";
+			}			
+		} else {
+			answer = "ELSE";
+		}
+		return answer;
 	}
 
 	public int getId() {
