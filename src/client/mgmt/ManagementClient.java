@@ -61,7 +61,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		id = 1;
 		buffer = new ArrayList<String>();
-		auto = true;
+		auto = false;
 	}
 
 	public void listen() {

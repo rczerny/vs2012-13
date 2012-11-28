@@ -96,6 +96,7 @@ public class Cron implements Runnable
 							if(a.getHighestBidder()!=null) {
 								ae.setSuccess(true);
 							}
+							ae.setTimestamp(System.currentTimeMillis()/1000);
 							as.processEvent(ae);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");

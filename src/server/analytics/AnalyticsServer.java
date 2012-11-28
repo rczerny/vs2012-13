@@ -152,7 +152,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		if(e.type.equals("USER_LOGIN")) {
 			userEvents.add((UserEvent) e);
 		}
-		if(e.type.equals("USER_LOGOUT")) {
+		if(e.type.equals("USER_LOGOUT") || e.type.equals("USER_DISCONNECTED")) {
 			for(int i = 0;i<userEvents.size();i++){					
 				if(((UserEvent) e).getUsername().equals(userEvents.get(i).getUsername())) {
 					double session = e.getTimestamp() - userEvents.get(i).getTimestamp();
