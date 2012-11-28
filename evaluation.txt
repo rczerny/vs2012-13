@@ -1,0 +1,20 @@
+###############################################################
+Machine on which the distributed system has been load-tested: #
+###############################################################
+
+MacBook Pro (15-inch, Early 2011)
+CPU: Intel Core i7 - 4x2.2 GHz
+RAM: 4GB - 204-pin PC-10600 (1333 MHz) DDR3 SO-DIMM
+OS: MacOS X 10.6.8
+
+##################
+Maximum Results: #
+##################
+clients:
+auctionsPerMin:
+auctionDuration:
+updateIntervalSec:
+bidsPerMin:
+@
+CPU-load: 
+Memory-load: 

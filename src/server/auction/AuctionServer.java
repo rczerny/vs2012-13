@@ -27,7 +27,7 @@ public class AuctionServer
 
 	public AuctionServer(int port) {
 		this.port = port;
-		pool = Executors.newFixedThreadPool(10);
+		pool = Executors.newCachedThreadPool();
 		try {
 			ssock = new ServerSocket(this.port);
 			ssock.setSoTimeout(500);

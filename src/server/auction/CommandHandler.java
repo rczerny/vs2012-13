@@ -13,6 +13,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.text.DecimalFormat;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 
 import server.analytics.AnalyticsServerRMI;
@@ -67,7 +68,7 @@ public class CommandHandler implements Runnable
 		}
 	}
 
-	public synchronized void run() {
+	public void run() {
 		while(!main.getShutdown() && !localShutdown) {
 			try {
 				sock.setSoTimeout(1000);
@@ -78,8 +79,6 @@ public class CommandHandler implements Runnable
 				command = command.trim(); // remove leading and trailing whitespaces
 				String[] commandParts = command.split("\\s+");
 				if (commandParts[0].equals("!list")) {
-					bw.newLine();
-					bw.flush();
 					listAuctions();
 					////////////////////////////////////////////
 					// !login - Client logs in
@@ -89,11 +88,17 @@ public class CommandHandler implements Runnable
 						bw.write("Invalid command! Should be !login <username>");
 						bw.newLine();
 						bw.flush();
+						bw.write("ready");
+						bw.newLine();
+						bw.flush();
 					} else {
 						if (u != null && u.isLoggedIn()) { // already logged in?
 							bw.write("You are already logged in as " + u.getUsername());
 							bw.newLine();
 							bw.write("Please logout first!");
+							bw.newLine();
+							bw.flush();
+							bw.write("ready");
 							bw.newLine();
 							bw.flush();
 						} else {
@@ -102,12 +107,18 @@ public class CommandHandler implements Runnable
 								bw.write("Username is too long! Limit is 50 characters!");
 								bw.newLine();
 								bw.flush();
+								bw.write("ready");
+								bw.newLine();
+								bw.flush();
 							} else {
 								int udpPort = Integer.parseInt(commandParts[2]);
 								u = main.getUser(username);
 								if (u != null && u.isLoggedIn()) { // is user already logged in at another session?
 									u = null;
 									bw.write(username + " is already logged in at another session! Logout first!");
+									bw.newLine();
+									bw.flush();
+									bw.write("ready");
 									bw.newLine();
 									bw.flush();
 								} else { 
@@ -135,7 +146,9 @@ public class CommandHandler implements Runnable
 									bw.write("Successfully logged in as " + u.getUsername());
 									bw.newLine();
 									bw.flush();
-
+									bw.write("ready");
+									bw.newLine();
+									bw.flush();
 									try{
 										UserEvent ue = new UserEvent();
 										ue.setType("USER_LOGIN");
@@ -158,11 +171,17 @@ public class CommandHandler implements Runnable
 						bw.write("You have to login first!");
 						bw.newLine();
 						bw.flush();
+						bw.write("ready");
+						bw.newLine();
+						bw.flush();
 					} else {
 						String username = u.getUsername();
 						u.setLoggedIn(false);
 						u.setUdpPort(0);
 						bw.write("Successfully logged out as " + username);
+						bw.newLine();
+						bw.flush();
+						bw.write("ready");
 						bw.newLine();
 						bw.flush();
 
@@ -186,10 +205,16 @@ public class CommandHandler implements Runnable
 							bw.write("Invalid command! Should be !create <duration> <description>");
 							bw.newLine();
 							bw.flush();
+							bw.write("ready");
+							bw.newLine();
+							bw.flush();
 						} else {
 							String description = command.split("\\s+", 3)[2];
 							if (description.length() > 1000) {
 								bw.write("Description is too long! Limit is 1000 characters!");
+								bw.newLine();
+								bw.flush();
+								bw.write("ready");
 								bw.newLine();
 								bw.flush();
 							} else {
@@ -203,7 +228,9 @@ public class CommandHandler implements Runnable
 										+ date.toString() + ".");
 								bw.newLine();
 								bw.flush();
-
+								bw.write("ready");
+								bw.newLine();
+								bw.flush();
 								try{
 									AuctionEvent ae = new AuctionEvent();
 									ae.setType("AUCTION_STARTED");
@@ -214,11 +241,16 @@ public class CommandHandler implements Runnable
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 									e.printStackTrace();
+								} catch (ConcurrentModificationException e) {
+									;
 								}
 							}
 						}
 					} else {
 						bw.write("You have to login first!");
+						bw.newLine();
+						bw.flush();
+						bw.write("ready");
 						bw.newLine();
 						bw.flush();
 					}
@@ -230,6 +262,9 @@ public class CommandHandler implements Runnable
 						bw.write("Invalid command! Should be !bid <auction-id> <amount>");
 						bw.newLine();
 						bw.flush();
+						bw.write("ready");
+						bw.newLine();
+						bw.flush();
 					} else if (u != null && u.isLoggedIn()) {
 						int id = Integer.parseInt(commandParts[1]);
 						double amount = Double.parseDouble(commandParts[2]);
@@ -239,6 +274,9 @@ public class CommandHandler implements Runnable
 						Auction a = main.getAuction(id);
 						if (a == null) {
 							bw.write("Error! Auction not found!");
+							bw.newLine();
+							bw.flush();
+							bw.write("ready");
 							bw.newLine();
 							bw.flush();
 						} else {
@@ -270,7 +308,9 @@ public class CommandHandler implements Runnable
 								bw.write("You successfully bid with " + amount_string + " on '" + a.getDescription() + "'.");
 								bw.newLine();
 								bw.flush();
-
+								bw.write("ready");
+								bw.newLine();
+								bw.flush();
 								try{
 									BidEvent be = new BidEvent();
 									be.setType("BID_PLACED");
@@ -289,10 +329,16 @@ public class CommandHandler implements Runnable
 								bw.write("Current highest bid is " + f.format(a.getHighestBid()));
 								bw.newLine();
 								bw.flush();
+								bw.write("ready");
+								bw.newLine();
+								bw.flush();
 							}
 						}
 					} else {
 						bw.write("You have to login first!");
+						bw.newLine();
+						bw.flush();
+						bw.write("ready");
 						bw.newLine();
 						bw.flush();
 					}
@@ -318,6 +364,9 @@ public class CommandHandler implements Runnable
 					}
 				} else {
 					bw.write("Unknown command!");
+					bw.newLine();
+					bw.flush();
+					bw.write("ready");
 					bw.newLine();
 					bw.flush();
 				}
@@ -355,32 +404,38 @@ public class CommandHandler implements Runnable
 	}
 
 	public void listAuctions() {
-		if (main.auctions.size() > 0) {
-			for (Auction a : main.auctions) {
-				try {
+		try {
+			if (main.auctions.size() > 0) {
+				for (Auction a : main.auctions) {
 					bw.write(a.toString());
 					bw.newLine();
 					bw.flush();
-				} catch (IOException e) {
-					System.err.println("Error while returning an auction list!");
-					e.printStackTrace();
 				}
-			}
-		} else {
-			try {
+				bw.write("ready");
+				bw.newLine();
+				bw.flush();
+			} else {
 				bw.write("No auctions available at the moment!");
 				bw.newLine();
 				bw.flush();
-			} catch (IOException e) {
-				System.err.println("Error while returning an auction list!");
-				e.printStackTrace();
+				bw.write("ready");
+				bw.newLine();
+				bw.flush();
 			}
+		} catch (IOException e) {
+			System.err.println("Error while returning an auction list!");
+			e.printStackTrace();
+		} catch (ConcurrentModificationException e) {
+			System.out.println("peep");
 		}
 	}
 
 	public void sendMessage(String message) {
 		try {
 			bw.write(message);
+			bw.newLine();
+			bw.flush();
+			bw.write("ready");
 			bw.newLine();
 			bw.flush();
 		} catch (IOException e) {

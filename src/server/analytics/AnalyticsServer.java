@@ -8,24 +8,27 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import client.mgmt.ManagementClientInterface;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.List;
 
 import tools.PropertiesParser;
+import client.mgmt.ManagementClientInterface;
 
 public class AnalyticsServer implements AnalyticsServerRMI{
 	
 	private long startTime;
 
-	private ArrayList<Client> clients = new ArrayList<Client>();
+	//Set<User> users = Collections.synchronizedSet(new HashSet<User>());
+	private List<Client> clients = Collections.synchronizedList(new ArrayList<Client>());
 	private int highestSubscriptionId = 1;
-	private ArrayList<Double> sessionTime = new ArrayList<Double>();
+	private List<Double> sessionTime = Collections.synchronizedList(new ArrayList<Double>());
 	private double minSessionTime = 0;
 	private double maxSessionTime = 0;
-	private ArrayList<UserEvent> userEvents = new ArrayList<UserEvent>();
+	private List<UserEvent> userEvents = Collections.synchronizedList(new ArrayList<UserEvent>());
 	private double maxBidPrice = 0;
-	private ArrayList<Double> auctionTime = new ArrayList<Double>();
-	private ArrayList<Boolean> auctionSucess = new ArrayList<Boolean>();
+	private List<Double> auctionTime = Collections.synchronizedList(new ArrayList<Double>());
+	private List<Boolean> auctionSucess = Collections.synchronizedList(new ArrayList<Boolean>());
 	private int bids = 0;
 
 	public AnalyticsServer() {
@@ -65,8 +68,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		return "Created subscription with ID " + id + " for events using filter " + filter;
 	}
 
-	@Override
-	public void processEvent(Event e) throws RemoteException {
+	public void processEvent(Event e) throws RemoteException, ConcurrentModificationException {
 		if(e instanceof UserEvent) {
 			createSessionTime(e);
 		}
@@ -144,7 +146,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		}
 	}
 
-	private void createSessionTime(Event e) {
+	private synchronized void createSessionTime(Event e) {
 		//create SessionTimeEvents
 
 		if(e.type.equals("USER_LOGIN")) {
