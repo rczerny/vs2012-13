@@ -33,10 +33,9 @@ public class Subscription {
 			if(filterParts[i].charAt(0) == '(') {
 				filterParts[i] = filterParts[i].substring(1, filterParts[i].length()-1);
 			}
-
-			//if last char of pattern is * change to .*
-			if(filterParts[i].charAt(filterParts[i].length()-1) == '*') {
-				filterParts[i]=filterParts[i].substring(0, filterParts[i].length()-1) + ".*";
+			
+			if(filterParts[i].contains("*")) {
+				filterParts[i] = filterParts[i].replace("*", ".*");
 			}
 
 			

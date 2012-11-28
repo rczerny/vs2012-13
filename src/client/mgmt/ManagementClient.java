@@ -199,7 +199,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 							e.printStackTrace();
 						} catch (NumberFormatException e1) {
 							System.err.println("ID must be a Integer!");
-							e1.printStackTrace();
+							//e1.printStackTrace();
 						}
 					}
 				} else if (commandParts[0].equals("!auto")) {

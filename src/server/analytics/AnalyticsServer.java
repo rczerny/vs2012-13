@@ -92,16 +92,19 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				bids=bids+1;
 				long now = System.currentTimeMillis()/1000;
 				long minutes = (now - startTime)/60;
+				if(minutes<1) {
+					minutes =1;
+				}
 
 				StatisticsEvent se = new StatisticsEvent();
 				se.setType("BID_COUNT_PER_MINUTE");
 				se.setTimestamp(System.currentTimeMillis());
 				if (minutes < 1) {
-					se.setValue(0);
+					se.setValue(bids/1);
 				} else {
 					se.setValue(bids/minutes);
 				}
-				processEvent(se);	
+				processEvent(se);
 			}
 		}
 
@@ -133,7 +136,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				}
 
 				StatisticsEvent se = new StatisticsEvent();
-				se.setType("AUCTION_SUCCESS_RATIO");
+				se.setType("AUCTION_SUCESS_RATIO");
 				se.setTimestamp(System.currentTimeMillis());
 				se.setValue(suc/auctionSucess.size());
 				processEvent(se);

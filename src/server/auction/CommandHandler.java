@@ -268,9 +268,9 @@ public class CommandHandler implements Runnable
 					} else if (u != null && u.isLoggedIn()) {
 						int id = Integer.parseInt(commandParts[1]);
 						double amount = Double.parseDouble(commandParts[2]);
-						DecimalFormat f = new DecimalFormat("#0.00");
-						String amount_string = f.format(amount);
-						amount = Double.parseDouble(amount_string); 
+						//DecimalFormat f = new DecimalFormat("#0.00");
+						//String amount_string = f.format(amount);
+						//amount = Double.parseDouble(amount_string); 
 						Auction a = main.getAuction(id);
 						if (a == null) {
 							bw.write("Error! Auction not found!");
@@ -305,7 +305,7 @@ public class CommandHandler implements Runnable
 
 								a.setHighestBid(amount);
 								a.setHighestBidder(u);
-								bw.write("You successfully bid with " + amount_string + " on '" + a.getDescription() + "'.");
+								bw.write("You successfully bid with " + amount + " on '" + a.getDescription() + "'.");
 								bw.newLine();
 								bw.flush();
 								bw.write("ready");
@@ -325,8 +325,8 @@ public class CommandHandler implements Runnable
 								}
 
 							} else {
-								bw.write("You unsuccessfully bid with " + amount_string + " on '" + a.getDescription() + "'. ");
-								bw.write("Current highest bid is " + f.format(a.getHighestBid()));
+								bw.write("You unsuccessfully bid with " + amount + " on '" + a.getDescription() + "'. ");
+								bw.write("Current highest bid is " + (a.getHighestBid()));
 								bw.newLine();
 								bw.flush();
 								bw.write("ready");
