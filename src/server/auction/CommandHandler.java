@@ -153,11 +153,11 @@ public class CommandHandler implements Runnable
 										UserEvent ue = new UserEvent();
 										ue.setType("USER_LOGIN");
 										ue.setUsername(u.getUsername());
-										ue.setTimestamp(System.currentTimeMillis()/1000);
+										ue.setTimestamp(System.currentTimeMillis());
 										as.processEvent(ue);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-										e.printStackTrace();
+										//e.printStackTrace();
 									}
 								}
 							}
@@ -189,11 +189,11 @@ public class CommandHandler implements Runnable
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
 							ue.setUsername(u.getUsername());
-							ue.setTimestamp(System.currentTimeMillis()/1000);
+							ue.setTimestamp(System.currentTimeMillis());
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-							e.printStackTrace();
+							//e.printStackTrace();
 						}
 					}
 					////////////////////////////////////////////
@@ -235,12 +235,12 @@ public class CommandHandler implements Runnable
 									AuctionEvent ae = new AuctionEvent();
 									ae.setType("AUCTION_STARTED");
 									ae.setAuctionID(a.getId());
-									ae.setTimestamp(System.currentTimeMillis()/1000);
+									ae.setTimestamp(System.currentTimeMillis());
 									ae.setDuration(duration);
 									as.processEvent(ae);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-									e.printStackTrace();
+									//e.printStackTrace();
 								} catch (ConcurrentModificationException e) {
 									;
 								}
@@ -268,9 +268,9 @@ public class CommandHandler implements Runnable
 					} else if (u != null && u.isLoggedIn()) {
 						int id = Integer.parseInt(commandParts[1]);
 						double amount = Double.parseDouble(commandParts[2]);
-						DecimalFormat f = new DecimalFormat("#0.00");
-						String amount_string = f.format(amount);
-						amount = Double.parseDouble(amount_string); 
+						//DecimalFormat f = new DecimalFormat("#0.00");
+						//String amount_string = f.format(amount);
+						//amount = Double.parseDouble(amount_string); 
 						Auction a = main.getAuction(id);
 						if (a == null) {
 							bw.write("Error! Auction not found!");
@@ -295,17 +295,17 @@ public class CommandHandler implements Runnable
 										be.setUsername(a.getHighestBidder().getUsername());
 										be.setAuctionId(a.getId());
 										be.setPrice(amount);
-										be.setTimestamp(System.currentTimeMillis()/1000);
+										be.setTimestamp(System.currentTimeMillis());
 										as.processEvent(be);
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-										e.printStackTrace();
+										//e.printStackTrace();
 									}
 								}
 
 								a.setHighestBid(amount);
 								a.setHighestBidder(u);
-								bw.write("You successfully bid with " + amount_string + " on '" + a.getDescription() + "'.");
+								bw.write("You successfully bid with " + amount + " on '" + a.getDescription() + "'.");
 								bw.newLine();
 								bw.flush();
 								bw.write("ready");
@@ -317,16 +317,16 @@ public class CommandHandler implements Runnable
 									be.setUsername(u.getUsername());
 									be.setAuctionId(a.getId());
 									be.setPrice(amount);
-									be.setTimestamp(System.currentTimeMillis()/1000);
+									be.setTimestamp(System.currentTimeMillis());
 									as.processEvent(be);
 								} catch (RemoteException e) {
 									System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-									e.printStackTrace();
+									//e.printStackTrace();
 								}
 
 							} else {
-								bw.write("You unsuccessfully bid with " + amount_string + " on '" + a.getDescription() + "'. ");
-								bw.write("Current highest bid is " + f.format(a.getHighestBid()));
+								bw.write("You unsuccessfully bid with " + amount + " on '" + a.getDescription() + "'. ");
+								bw.write("Current highest bid is " + (a.getHighestBid()));
 								bw.newLine();
 								bw.flush();
 								bw.write("ready");
@@ -352,11 +352,11 @@ public class CommandHandler implements Runnable
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
 							ue.setUsername(u.getUsername());
-							ue.setTimestamp(System.currentTimeMillis()/1000);
+							ue.setTimestamp(System.currentTimeMillis());
 							as.processEvent(ue);
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-							e.printStackTrace();
+							//e.printStackTrace();
 						}
 						u.setLoggedIn(false);
 						//u.setSocket(null);
@@ -379,13 +379,13 @@ public class CommandHandler implements Runnable
 					UserEvent ue = new UserEvent();
 					ue.setType("USER_DISCONNECTED");
 					ue.setUsername(u.getUsername());
-					ue.setTimestamp(System.currentTimeMillis()/1000);
+					ue.setTimestamp(System.currentTimeMillis());
 					as.processEvent(ue);
 					u.setLoggedIn(false);
 					break;
 				} catch (RemoteException e1) {
 					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-					e1.printStackTrace();
+					//e1.printStackTrace();
 				}
 
 				System.err.println("Error while communicating with the client!");

@@ -62,7 +62,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 		id = 1;
 		buffer = new ArrayList<String>();
-		auto = true;
+		auto = false;
 	}
 
 	public void listen() {
@@ -192,7 +192,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 						System.err.println("Invalid command! Must be !subscribe <filter>");
 					} else {
 						try {
-							as.subscribe(this, commandParts[1]);
+							System.out.println(as.subscribe(this, commandParts[1]));
 						} catch (RemoteException e) {
 							System.err.println("ERROR: Couldn't subscribe!");
 						}
@@ -204,7 +204,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 						System.err.println("Invalid command! Must be !unsubscribe <id>");
 					} else {
 						try {
-							as.unsubscribe(this, Integer.parseInt(commandParts[1]));
+							System.out.println(as.unsubscribe(this, Integer.parseInt(commandParts[1])));
 						} catch (RemoteException e) {
 							System.err.println("ERROR: Couldn't unsubscribe!");
 						} catch (NumberFormatException e1) {

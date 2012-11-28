@@ -54,11 +54,11 @@ public class BidEvent extends Event{
 		}
 		
 		if(this.type.equals("BID_OVERBID")) {
-			suffix = "OVERBIDt";
+			suffix = "user " + username + " got overbid with " + price + " on auction " + auctionId;
 		}
 		
 		if(this.type.equals("BID_WON")) {
-			suffix = "WON";
+			suffix = "user " + username + " WON auction " + auctionId + " with " + price;
 		}
 		
 		return prefix + suffix;
