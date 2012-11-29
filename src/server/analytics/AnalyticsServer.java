@@ -106,6 +106,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 					se.setValue(bids/1);
 				} else {
 					se.setValue(bids/minutes);
+					
 				}
 				processEvent(se);
 			}
