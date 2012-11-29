@@ -8,5 +8,5 @@ import server.analytics.Event;
 
 public interface ManagementClientInterface extends Remote {
 	public void processEvent(Event e) throws RemoteException;
-	public int getId() throws RemoteException;
+	public long getId() throws RemoteException;
 }

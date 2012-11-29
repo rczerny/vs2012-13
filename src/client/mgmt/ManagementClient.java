@@ -34,8 +34,8 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	private Registry reg = null;
 	private BufferedReader keys = null;
 	private String PROMPT = "> ";
-	private static int masterId = 0;
-	private int id = 0;
+	//private static int masterId = 0;
+	private long id = 0;
 	private ArrayList<String> buffer = null;
 	private boolean auto;
 	private String username = "";
@@ -61,8 +61,8 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			System.err.println("Object couldn't be found");
 			e.printStackTrace();
 		}
-		masterId++;
-		id = masterId;
+		//masterId++;
+		id = System.currentTimeMillis();
 		buffer = new ArrayList<String>();
 		auto = false;
 	}
@@ -197,6 +197,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 							System.out.println(as.subscribe(this, commandParts[1]));
 						} catch (RemoteException e) {
 							System.err.println("ERROR: Couldn't subscribe!");
+							e.printStackTrace();
 						}
 
 					}
@@ -279,11 +280,11 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 		}
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 

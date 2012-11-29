@@ -43,7 +43,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	@Override
 	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
 		Client client = null;
-
+		System.out.println(mClient.getId());
 		for(Client c:clients) {
 			if(c.getmClient().getId()==mClient.getId()) {
 				client = c;

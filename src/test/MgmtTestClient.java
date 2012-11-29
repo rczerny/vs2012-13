@@ -20,7 +20,7 @@ public class MgmtTestClient extends UnicastRemoteObject implements ManagementCli
 	private AnalyticsServerRMI as = null;
 	private PropertiesParser ps = null;
 	private Registry reg = null;
-	private int id = 0;
+	private long id = 0;
 	private ArrayList<String> buffer = null;
 	private boolean auto = true;
 	private LoadTest lt = null;
@@ -69,11 +69,11 @@ public class MgmtTestClient extends UnicastRemoteObject implements ManagementCli
 		}
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 
