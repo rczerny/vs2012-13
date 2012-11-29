@@ -34,6 +34,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 	private Registry reg = null;
 	private BufferedReader keys = null;
 	private String PROMPT = "> ";
+	private static int masterId = 0;
 	private int id = 0;
 	private ArrayList<String> buffer = null;
 	private boolean auto;
@@ -60,7 +61,8 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			System.err.println("Object couldn't be found");
 			e.printStackTrace();
 		}
-		id = 1;
+		masterId++;
+		id = masterId;
 		buffer = new ArrayList<String>();
 		auto = false;
 	}
