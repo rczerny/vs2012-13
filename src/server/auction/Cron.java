@@ -80,16 +80,15 @@ public class Cron implements Runnable
 						}
 
 						try {
-							BidEvent be = new BidEvent();
-							be.setType("BID_WON");
-							if (a.getHighestBidder() == null)
-								be.setUsername("none");
-							else
+							if (a.getHighestBidder() != null) {
+								BidEvent be = new BidEvent();
+								be.setType("BID_WON");
 								be.setUsername(a.getHighestBidder().getUsername());
-							be.setAuctionId(a.getId());
-							be.setPrice(a.getHighestBid());
-							be.setTimestamp(System.currentTimeMillis());
-							as.processEvent(be);
+								be.setAuctionId(a.getId());
+								be.setPrice(a.getHighestBid());
+								be.setTimestamp(System.currentTimeMillis());
+								as.processEvent(be);
+							}
 
 							AuctionEvent ae = new AuctionEvent();
 							ae.setType("AUCTION_ENDED");

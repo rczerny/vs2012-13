@@ -32,8 +32,7 @@ public class AuctionServer
 			ssock = new ServerSocket(this.port);
 			ssock.setSoTimeout(500);
 		} catch (IOException e) {
-			System.err.println("Couldn't bind to specified port!");
-			e.printStackTrace();
+			System.err.println("ERROR: Couldn't bind to specified port! It is probably already in use!");
 		}
 	}
 

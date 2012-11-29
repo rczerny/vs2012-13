@@ -21,8 +21,7 @@ public class ConsoleListener implements Runnable
 			}
 			main.shutdown();
 		} catch (IOException e) {
-			System.err.println("ERROR: Console I/O Error!");
-			e.printStackTrace();
+			;
 		}
 	}
 }

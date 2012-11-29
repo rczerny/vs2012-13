@@ -376,6 +376,7 @@ public class CommandHandler implements Runnable
 				sendMessage("Invalid format: Found non-number where number was expected!");
 			} catch (IOException e) {
 				try{
+					System.out.println("meh");
 					UserEvent ue = new UserEvent();
 					ue.setType("USER_DISCONNECTED");
 					ue.setUsername(u.getUsername());
@@ -426,7 +427,7 @@ public class CommandHandler implements Runnable
 			System.err.println("Error while returning an auction list!");
 			e.printStackTrace();
 		} catch (ConcurrentModificationException e) {
-			System.out.println("peep");
+			;
 		}
 	}
 

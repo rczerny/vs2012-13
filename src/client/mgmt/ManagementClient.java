@@ -52,14 +52,15 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 			bs = (BillingServerRMI) reg.lookup(billingBindingName);
 			as = (AnalyticsServerRMI) reg.lookup(analyticsBindingName);
 		} catch (FileNotFoundException e) {
-			System.err.println("properties file not found!");
+			System.err.println("ERROR: properties file not found!");
 		} catch (NumberFormatException e) {
-			System.err.println("Port non-numeric!");
+			System.err.println("ERROR: Port non-numeric!");
 		} catch (RemoteException e) {
-			System.err.println("Registry couldn't be found!");
+			System.err.println("ERROR :Registry couldn't be found!");
+			System.exit(1);
 		} catch (NotBoundException e) {
-			System.err.println("Object couldn't be found");
-			e.printStackTrace();
+			System.err.println("ERROR: Object couldn't be found");
+			System.exit(1);
 		}
 		//masterId++;
 		id = System.currentTimeMillis();
@@ -117,7 +118,10 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 								double fixedPrice = Double.parseDouble(commandParts[3]);
 								double variablePricePercent = Double.parseDouble(commandParts[4]);
 								bss.createPriceStep(startPrice, endPrice, fixedPrice, variablePricePercent);
-								System.out.println("Step (" + startPrice + " " + endPrice + "] successfully created");
+								if (endPrice == 0)
+									System.out.println("Step (" + startPrice + " INFINITY] successfully created");
+								else
+									System.out.println("Step (" + startPrice + " " + endPrice + "] successfully created");
 							} catch (NumberFormatException e) {
 								System.err.println("Error! Non-numeric argument, where numeric argument expected!");
 							} catch (RemoteException e) {
@@ -197,7 +201,6 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 							System.out.println(as.subscribe(this, commandParts[1]));
 						} catch (RemoteException e) {
 							System.err.println("ERROR: Couldn't subscribe!");
-							e.printStackTrace();
 						}
 
 					}
@@ -226,7 +229,7 @@ public class ManagementClient extends UnicastRemoteObject implements ManagementC
 				System.out.print(PROMPT);
 			}
 		} catch (IOException e) {
-			System.err.println("ERROR: Console I/O Error!");
+			System.err.println("ERROR: I/O Error! Maybe server has shut down?");
 		}
 		System.out.println("Shutting down!");
 		as = null;

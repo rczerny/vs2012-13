@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
-import server.billing.BillingServerSecureImpl;
 import tools.PropertiesParser;
 import client.mgmt.ManagementClientInterface;
 
@@ -43,7 +42,6 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 	@Override
 	public String subscribe(ManagementClientInterface mClient, String filter) throws RemoteException {
 		Client client = null;
-		System.out.println(mClient.getId());
 		for(Client c:clients) {
 			if(c.getmClient().getId()==mClient.getId()) {
 				client = c;
@@ -51,14 +49,13 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		}
 		if(client == null) {
 			client = new Client(mClient);
-			System.out.println("new Client");
 			clients.add(client);
 		}	
 
 		Subscription sub = new Subscription(highestSubscriptionId, filter, client);
 		String answer = sub.createFilter(filter);
 		int id = highestSubscriptionId;
-		
+
 		if(!sub.filter.isEmpty()) {
 			client.getSubscriptions().put(highestSubscriptionId, sub);
 		}
@@ -67,15 +64,15 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 			if(answer.equals("ALL")) {
 				return "Creating subscription failed! - You were already subscribed for ALL of these events!";
 			}
-						
+
 			return "Creating subscription failed!";
 		}
-		
+
 		highestSubscriptionId++;
 		if(answer.equals("SOME")) {
 			return "Creating subscription failed for some events! - You were already subscribed for these events!";
 		}
-		
+
 		return "Created subscription with ID " + id + " for events using filter " + filter;
 	}
 
@@ -117,18 +114,6 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		if(e instanceof AuctionEvent) {
 			if(e.type.equals("AUCTION_STARTED")) {
 				auctionTime.add(((AuctionEvent) e).getDuration());
-
-				double sum = 0;
-				for(double s:auctionTime) {
-					sum = sum + s;
-				}
-				double avg = sum / auctionTime.size();
-
-				StatisticsEvent se = new StatisticsEvent();
-				se.setTimestamp(System.currentTimeMillis());
-				se.setType("AUCTION_TIME_AVG");
-				se.setValue(avg);
-				processEvent(se);
 			}
 
 			if(e.type.equals("AUCTION_ENDED")) {
@@ -146,21 +131,38 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 				se.setTimestamp(System.currentTimeMillis());
 				se.setValue(suc/auctionSucess.size());
 				processEvent(se);
+
+				double sum = 0;
+				for(double s:auctionTime) {
+					sum = sum + s;
+				}
+				double avg = sum / auctionTime.size();
+
+				StatisticsEvent se2 = new StatisticsEvent();
+				se2.setTimestamp(System.currentTimeMillis());
+				se2.setType("AUCTION_TIME_AVG");
+				se2.setValue(avg);
+				processEvent(se2);
 			}
 		}
 
 		//process Event to subscribed clients
-		for(Client c:clients) {
-			Collection<Subscription> sub = c.getSubscriptions().values();
-			for(Subscription s:sub) {
-				if(s.getFilter().contains(e.type)) {
-					try {
-						c.getmClient().processEvent(e);
-					} catch (RemoteException ex) {
-						c.getSubscriptions().clear();
+		try {
+			for(Client c:clients) {
+				Collection<Subscription> sub = c.getSubscriptions().values();
+				for(Subscription s:sub) {
+					if(s.getFilter().contains(e.type)) {
+						try {
+							c.getmClient().processEvent(e);
+						} catch (RemoteException ex) {
+							c.getSubscriptions().clear();
+							clients.remove(c);
+						}
 					}
 				}
 			}
+		} catch (ConcurrentModificationException ex) {
+			;
 		}
 	}
 
@@ -242,7 +244,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 
 		return "unsubscribe failed";
 	}
-	
+
 	public void shutdown() {
 		PropertiesParser ps = null;
 		try {
@@ -268,7 +270,7 @@ public class AnalyticsServer implements AnalyticsServerRMI{
 		System.out.println("Shutting down!");
 		System.exit(0);
 	}
-	
+
 	/**
 	 * @param args
 	 */

@@ -27,6 +27,11 @@ public class LoadTest
 		this.bidsPerMin = bidsPerMin;
 		this.host  = host;
 		this.tcpPort = tcpPort;
+		System.out.println("Loadtest started with:");
+		System.out.println(clients + " Clients");
+		System.out.println(auctionsPerMin + " auctions per minute");
+		System.out.println(auctionDuration + " seconds of auction duration");
+		System.out.println(bidsPerMin + " bids per minute");
 	}
 
 	public void run() {

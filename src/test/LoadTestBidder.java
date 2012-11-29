@@ -37,7 +37,6 @@ public class LoadTestBidder implements Runnable
 			br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
 			sendAndReceive("!login hans" + new Date().getTime() + " 12345");
-			System.out.println("Logged In!");
 		} catch (UnknownHostException e) {
 			System.err.println("Error! Couldn't find the given host!");
 			e.printStackTrace();
@@ -106,7 +105,6 @@ public class LoadTestBidder implements Runnable
 		String answerLine = "";
 		ArrayList<String> temp = new ArrayList<String>();
 		try {
-			System.out.println("Trying: " + message);
 			bw.write(message);
 			bw.newLine();
 			bw.flush();
@@ -122,7 +120,6 @@ public class LoadTestBidder implements Runnable
 			if (message.equals("!list")) {
 				while (!(answerLine = br.readLine()).equals("ready")) {
 					temp.add(answerLine);
-					System.out.println(answerLine);
 				}
 			}
 		} catch (SocketTimeoutException e) {
@@ -143,7 +140,6 @@ public class LoadTestBidder implements Runnable
 		while(!lt.isShutdown()) {
 			if (auctions.size() > 0) {
 				int random = new Random().nextInt(auctions.size());
-				System.out.println(auctions.size());
 				int id = (Integer)auctions.keySet().toArray()[random];
 				sendAndReceive("!bid " + id + " " + Math.abs(new Date().getTime() - auctions.get(id).getTime()));
 				try {

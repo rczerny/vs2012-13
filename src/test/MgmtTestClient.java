@@ -47,7 +47,6 @@ public class MgmtTestClient extends UnicastRemoteObject implements ManagementCli
 		buffer = new ArrayList<String>();
 		auto = true;
 		as.subscribe(this, "'(.*)'");
-		System.out.println("Subscription made!!!!!!!!!!!!!!!!!!!!!!!");
 	}
 
 	public void run() {

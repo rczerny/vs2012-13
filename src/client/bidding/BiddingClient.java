@@ -21,6 +21,7 @@ public class BiddingClient implements Runnable
 	private boolean shutdown = false;
 	private static String PROMPT = "> ";
 	private String username = "";
+	private Socket sock;
 
 	public BiddingClient() {
 
@@ -51,7 +52,7 @@ public class BiddingClient implements Runnable
 		BufferedReader keys = null;
 		String input = null;
 		String answer = null;
-		Socket sock = null;
+		sock = null;
 		try {
 			sock = new Socket(host, tcpPort);
 			br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
@@ -98,6 +99,9 @@ public class BiddingClient implements Runnable
 			} catch (IOException e) {
 				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 				//e.printStackTrace();
+				shutdown = true;
+			} catch (NullPointerException e) {
+				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 				shutdown = true;
 			}
 		}
