@@ -20,7 +20,16 @@ public class AuctionLoader implements Runnable
 		while(!ltb.isShutdown()) {
 			answer = ltb.sendAndReceive("!list");
 			for (String answerline : answer) {
-				if (!answerline.startsWith("N")) {
+				if (answerline.startsWith("0") ||
+						answerline.startsWith("1") ||
+						answerline.startsWith("2") ||
+						answerline.startsWith("3") ||
+						answerline.startsWith("4") ||
+						answerline.startsWith("5") ||
+						answerline.startsWith("6") ||
+						answerline.startsWith("7") ||
+						answerline.startsWith("8") ||
+						answerline.startsWith("9")) {
 					answerline = answerline.trim();
 					String[] answerParts = answerline.split("\\s+");
 					int id = Integer.parseInt(answerParts[0].substring(0, answerParts[0].length()-1));
