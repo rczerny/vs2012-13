@@ -1,28 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="dslab2" default="compile" basedir=".">
+<project name="dslab3" default="compile" basedir=".">
 
     <property name="src.dir" value="src"/>
     <property name="build.dir" value="build"/>
+    <property name="lib.dir" value="lib"/>
 
     <!-- You need to update these properties!-->
     <property name="server.name" value="server.auction.AuctionServer"/><!-- Server's full class name (including the package) -->
     <property name="server.host" value="localhost"/><!-- Auction Server's host -->
     <property name="client.name" value="client.bidding.BiddingClient"/><!-- Bidding Client's full class name (including the package) -->
-    <property name="client1.port" value="12121"/><!-- UDP port of 1st Bidding Client -->
-    <property name="client2.port" value="12122"/><!-- UDP port of 2nd Bidding Client -->
-    <property name="client3.port" value="12123"/><!-- UDP port of 3rd Bidding Client -->
     <property name="mgmtclient.name" value="client.mgmt.ManagementClient"/><!-- Management Client's full class name (including the package) -->
-    <property name="loadtest.name" value="test.LoadTest"/><!-- Load Test component's full class name -->
     <property name="analytics.name" value="server.analytics.AnalyticsServer"/><!-- Analytics Server's full class name (including the package) -->
     <property name="billing.name" value="server.billing.BillingServer"/><!-- Billing Server's full class name (including the package) -->
     <property name="analytics.bindingName" value="RemoteAnalyticsServer"/><!-- RMI Binding Name of the Analytics Server -->
     <property name="billing.bindingName" value="RemoteBillingServer"/><!-- RMI Binding Name of the Billing Server -->
     <property name="server.port" value="12120"/><!-- TCP port -->
+    <!-- new properties for assignment 3 -->
+    <property name="server.key" value="keys/auction-server.pem"/><!-- Private key file of Auction Server -->
+    <property name="server.key.pub" value="keys/auction-server.pub.pem"/><!-- Public key file of Auction Server -->
+    <property name="clients.key.dir" value="keys/"/><!-- Directory of private/public keys of bidding clients -->
+    <property name="client1.port" value="12121"/><!-- UDP port (and TCP port for assignment 3!) of 1st Bidding Client -->
+    <property name="client2.port" value="12122"/><!-- UDP port (and TCP port for assignment 3!) of 2nd Bidding Client -->
+    <property name="client3.port" value="12123"/><!-- UDP port (and TCP port for assignment 3!) of 3rd Bidding Client -->
 
     <path id="project.classpath">
+	<fileset dir="${lib.dir}">
+		<include name="log4j-1.2.16.jar"/>
+		<include name="bcprov-jdk16-144.jar"/>
+	</fileset>
         <pathelement location="${build.dir}"/>
-	<pathelement location="lib/junit-4.10.jar"/>
     </path>
+
+    <assertions id="project.assertions">
+        <enable/>
+    </assertions>
 
     <target name="compile" description="Compile project.">
         <mkdir dir="${build.dir}"/>
@@ -36,50 +47,65 @@
 
     <target name="run-server" depends="compile" description="Run Auction Server.">
         <java classname="${server.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${server.port}"/>
             <arg value="${analytics.bindingName}"/>
             <arg value="${billing.bindingName}"/>
+            <arg value="${server.key}"/>
+            <arg value="${clients.key.dir}"/>
         </java>
     </target>
 
     <target name="run-analytics-server" depends="compile" description="Run Analytics Server.">
         <java classname="${analytics.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${analytics.bindingName}"/>
         </java>
     </target>
 
     <target name="run-billing-server" depends="compile" description="Run Billing Server.">
         <java classname="${billing.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${billing.bindingName}"/>
         </java>
     </target>
 
     <target name="run-client1" depends="compile" description="Run 1st Client.">
         <java classname="${client.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${server.host}"/>
             <arg value="${server.port}"/>
             <arg value="${client1.port}"/>
+            <arg value="${server.key.pub}"/>
+            <arg value="${clients.key.dir}"/>
         </java>
     </target>
 
     <target name="run-client2" depends="compile" description="Run 2nd Client.">
         <java classname="${client.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${server.host}"/>
             <arg value="${server.port}"/>
             <arg value="${client2.port}"/>
+            <arg value="${server.key.pub}"/>
+            <arg value="${clients.key.dir}"/>
         </java>
     </target>
 
     <target name="run-client3" depends="compile" description="Run 3rd Client.">
         <java classname="${client.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${server.host}"/>
             <arg value="${server.port}"/>
             <arg value="${client3.port}"/>
+            <arg value="${server.key.pub}"/>
+            <arg value="${clients.key.dir}"/>
         </java>
     </target>
 
     <target name="run-mgmtclient1" depends="compile" description="Run Management Client 1.">
         <java classname="${mgmtclient.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${analytics.bindingName}"/>
             <arg value="${billing.bindingName}"/>
         </java>
@@ -87,6 +113,7 @@
 
     <target name="run-mgmtclient2" depends="compile" description="Run Management Client 2.">
         <java classname="${mgmtclient.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${analytics.bindingName}"/>
             <arg value="${billing.bindingName}"/>
         </java>
@@ -94,16 +121,19 @@
 
     <target name="run-mgmtclient3" depends="compile" description="Run Management Client 3.">
         <java classname="${mgmtclient.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${analytics.bindingName}"/>
             <arg value="${billing.bindingName}"/>
         </java>
     </target>
 
     <target name="run-loadtest" depends="compile" description="Run Load Test.">
-        <java classname="${loadtest.name}" fork="true" classpathref="project.classpath">
+        <java classname="${client.name}" fork="true" classpathref="project.classpath">
+            <assertions refid="project.assertions"/>
             <arg value="${server.host}"/>
             <arg value="${server.port}"/>
             <arg value="${analytics.bindingName}"/>
+            <arg value="${billing.bindingName}"/>
         </java>
     </target>
 
@@ -113,4 +143,5 @@
 
     <target name="rebuild" depends="clean, compile" description="Clean and build project."/>
 </project>
+
 

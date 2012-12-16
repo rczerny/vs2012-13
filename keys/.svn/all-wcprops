@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/teaching/!svn/ver/1776/DSLab/ws2012/Lab3/angabe/template/keys
+END
+alice.pub.pem
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/teaching/!svn/ver/1776/DSLab/ws2012/Lab3/angabe/template/keys/alice.pub.pem
+END
+auction-server.pem
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/teaching/!svn/ver/1776/DSLab/ws2012/Lab3/angabe/template/keys/auction-server.pem
+END
+auction-server.pub.pem
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/teaching/!svn/ver/1776/DSLab/ws2012/Lab3/angabe/template/keys/auction-server.pub.pem
+END
+alice.pem
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/teaching/!svn/ver/1776/DSLab/ws2012/Lab3/angabe/template/keys/alice.pem
+END

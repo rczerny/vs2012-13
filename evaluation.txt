@@ -10,10 +10,10 @@ OS: MacOS X 10.6.8
 ##################
 Maximum Results: #
 ##################
-clients: 50
-auctionsPerMin: 1
-auctionDuration: 60
-updateIntervalSec: 10
+clients: 70
+auctionsPerMin: 3
+auctionDuration: 70
+updateIntervalSec: 7
 bidsPerMin: 20
 @
 CPU-load: 62.5 %
