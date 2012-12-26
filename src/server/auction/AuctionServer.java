@@ -24,8 +24,10 @@ public class AuctionServer
 	private boolean shutdown = false;
 	private int highestAuctionID = 0;
 	private Cron tt = null;
+	private String serverPrivKey = "";
+	private String clientsKeyDir = "";
 
-	public AuctionServer(int port) {
+	public AuctionServer(int port, String serverPrivKey, String clientsKeyDir) {
 		this.port = port;
 		pool = Executors.newCachedThreadPool();
 		try {
@@ -34,6 +36,8 @@ public class AuctionServer
 		} catch (IOException e) {
 			System.err.println("ERROR: Couldn't bind to specified port! It is probably already in use!");
 		}
+		this.serverPrivKey = serverPrivKey;
+		this.clientsKeyDir = clientsKeyDir;
 	}
 
 	public boolean getShutdown() {
@@ -45,7 +49,7 @@ public class AuctionServer
 	}
 
 	public void runServer(String billingBindingName) {
-		pool.execute(new ConsoleListener(this));
+		//pool.execute(new ConsoleListener(this));
 		tt = new Cron(this, billingBindingName);
 		pool.execute(tt);
 		while (!shutdown) {
@@ -86,6 +90,22 @@ public class AuctionServer
 
 	public void setHighestAuctionID(int highestAuctionID) {
 		this.highestAuctionID = highestAuctionID;
+	}
+
+	public String getServerPrivKey() {
+		return serverPrivKey;
+	}
+
+	public void setServerPrivKey(String serverPrivKey) {
+		this.serverPrivKey = serverPrivKey;
+	}
+
+	public String getClientsKeyDir() {
+		return clientsKeyDir;
+	}
+
+	public void setClientsKeyDir(String clientsKeyDir) {
+		this.clientsKeyDir = clientsKeyDir;
 	}
 
 	public User getUser(String username) {
@@ -141,7 +161,7 @@ public class AuctionServer
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if (args.length != 3) {
+		if (args.length != 5) {
 			System.err.println("Invalid arguments!");
 			System.err.println("USAGE: java AuctionServer <tcpPort> <analyticsBindingName> <billingBindingName>");
 			System.err.println("tcpPort must be numeric and <= 65535!");
@@ -149,7 +169,7 @@ public class AuctionServer
 			try {
 				int tcpPort = Integer.parseInt(args[0]); // check if tcpPort is numeric
 				if (tcpPort <= 65535) {
-					AuctionServer main = new AuctionServer(tcpPort);
+					AuctionServer main = new AuctionServer(tcpPort, args[3], args[4]);
 					main.runServer(args[2]);
 				} else {
 					System.err.println("tcpPort and udpPort must be numeric and <= 65535!");

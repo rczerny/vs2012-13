@@ -12,20 +12,26 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.text.DecimalFormat;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
+
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.util.encoders.Base64;
 
 import server.analytics.AnalyticsServerRMI;
 import server.analytics.AuctionEvent;
 import server.analytics.BidEvent;
 import server.analytics.UserEvent;
 import tools.PropertiesParser;
+import tools.SuperSecureSocket;
 
 public class CommandHandler implements Runnable
 {
 	private User u = null;
 	private Socket sock = null;
+	private SuperSecureSocket ssock = null;
 	private BufferedReader br = null;
 	private BufferedWriter bw = null;
 	private AuctionServer main = null;
@@ -38,21 +44,17 @@ public class CommandHandler implements Runnable
 
 	public CommandHandler(Socket s, AuctionServer main) {
 		this.sock = s;
+		ssock = new SuperSecureSocket(sock, main.getServerPrivKey(), main.getClientsKeyDir());
 		this.main = main;
-		try {
-			br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-			bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
-		} catch (IOException e) {
-			System.err.println("Error when opening I/O streams!");
-			e.printStackTrace();
-		}
+		br = new BufferedReader(new InputStreamReader(ssock.getInputStream()));
+		bw = new BufferedWriter(new OutputStreamWriter(ssock.getOutputStream()));
 
 		try {
 			ps = new PropertiesParser("registry.properties");
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
 			reg = LocateRegistry.getRegistry(host, portNr);
-			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer"); // 
+			as = (AnalyticsServerRMI) reg.lookup("RemoteAnalyticsServer");
 		} catch (FileNotFoundException e) {
 			System.out.println("properties file not found!");
 			e.printStackTrace();
@@ -71,9 +73,10 @@ public class CommandHandler implements Runnable
 	public void run() {
 		while(!main.getShutdown() && !localShutdown) {
 			try {
-				sock.setSoTimeout(1000);
+				//sock.setSoTimeout(1000);
 				String command = "";
-				command = br.readLine();
+				command = ssock.readLine();
+				System.out.println("Got " + command);
 				if (command == null)
 					command = "!end";
 				command = command.trim(); // remove leading and trailing whitespaces
@@ -84,80 +87,82 @@ public class CommandHandler implements Runnable
 					// !login - Client logs in
 					////////////////////////////////////////////
 				} else if(commandParts[0].equals("!login")) {
-					if (commandParts.length != 3) {
-						bw.write("Invalid command! Should be !login <username>");
-						bw.newLine();
-						bw.flush();
-						bw.write("ready");
-						bw.newLine();
-						bw.flush();
+					byte[] clientChallenge = Base64.decode(commandParts[3]);
+					System.out.println(command);
+					System.out.println(commandParts[3]);
+					byte[] clientChallengeB64 = ssock.decrypt(clientChallenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getPEMPrivateKey(main.getServerPrivKey()));
+					clientChallenge = Base64.decode(clientChallengeB64);
+					if (commandParts.length != 4) {
+						ssock.sendLine("Invalid command! Should be !login <username>");
 					} else {
 						if (u != null && u.isLoggedIn()) { // already logged in?
-							bw.write("You are already logged in as " + u.getUsername());
-							bw.newLine();
-							bw.write("Please logout first!");
-							bw.newLine();
-							bw.flush();
-							bw.write("ready");
-							bw.newLine();
-							bw.flush();
+							ssock.sendLine("You are already logged in as " + u.getUsername() + "\nPlease logout first!");
 						} else {
 							String username = commandParts[1];
 							if (username.length() > 50) { // check if username is too long
-								bw.write("Username is too long! Limit is 50 characters!");
-								bw.newLine();
-								bw.flush();
-								bw.write("ready");
-								bw.newLine();
-								bw.flush();
+								ssock.sendLine("Username is too long! Limit is 50 characters!");
 							} else {
 								int udpPort = Integer.parseInt(commandParts[2]);
 								u = main.getUser(username);
 								if (u != null && u.isLoggedIn()) { // is user already logged in at another session?
 									u = null;
-									bw.write(username + " is already logged in at another session! Logout first!");
-									bw.newLine();
-									bw.flush();
-									bw.write("ready");
-									bw.newLine();
-									bw.flush();
-								} else { 
-									if (u == null) { // new user?
-										u = new User(sock);
-										u.setUsername(username);
-										u.setUdpPort(udpPort);
-										u.setLoggedIn(true);
-										main.users.add(u);
-									} else { // user is known to the system
-										u.setUdpPort(udpPort);
-										u.setLoggedIn(true);
-										u.setSocket(sock);
-										/*********************
-										 * no UDP in Lab 2
-										 *********************
+									ssock.sendLine(username + " is already logged in at another session! Logout first!");
+								} else {
+									System.out.println("Key generation!");
+									byte[] secretKey = ssock.generateSecureRandomNumber(32);
+									byte[] serverChallenge = ssock.generateSecureRandomNumber(32);
+									byte[] iv = ssock.generateSecureRandomNumber(16);
+									String message2 = new String(clientChallengeB64) + " " + new String(Base64.encode(serverChallenge)) +
+											" " + new String(Base64.encode(secretKey)) + " " + new String(Base64.encode(iv));
+									byte[] message2B = ssock.encrypt(message2.getBytes(), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getPEMPublicKey(main.getClientsKeyDir() + username + ".pub.pem")); 
+									message2 = "!ok " + new String(Base64.encode(message2B));
+									System.out.println("iv-length: " +iv.length);
+									System.out.println("Just before sending message 2");
+									ssock.sendLine(message2);
+									System.out.println("Just after sending message 2");
+									ssock.setSecretKey(new SecretKeySpec(secretKey, "AES"));
+									ssock.setIv(new IvParameterSpec(iv));
+									String message3 = ssock.readLine();
+									System.out.println("message3: " + message3);
+									if (message3.equals(new String(serverChallenge))) {
+										System.out.println("serverChallenges match!");
+										if (u == null) { // new user?
+											u = new User(sock);
+											u.setUsername(username);
+											u.setUdpPort(udpPort);
+											u.setLoggedIn(true);
+											main.users.add(u);
+										} else { // user is known to the system
+											u.setUdpPort(udpPort);
+											u.setLoggedIn(true);
+											u.setSocket(sock);
+											/*********************
+											 * no UDP in Lab 2
+											 *********************
 										if (u.getDueNotifications() != null && u.getDueNotifications().size() > 0) { // any notifications due?
 											for (String message : u.getDueNotifications()) {
 												main.sendNotification(u, message);
 												u.getDueNotifications().remove(message);
 											}
 										}
-										 */
-									}
-									bw.write("Successfully logged in as " + u.getUsername());
-									bw.newLine();
-									bw.flush();
-									bw.write("ready");
-									bw.newLine();
-									bw.flush();
-									try{
-										UserEvent ue = new UserEvent();
-										ue.setType("USER_LOGIN");
-										ue.setUsername(u.getUsername());
-										ue.setTimestamp(System.currentTimeMillis());
-										as.processEvent(ue);
-									} catch (RemoteException e) {
-										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
-										//e.printStackTrace();
+											 */
+										}
+										System.out.println("Successfully logged in as " + u.getUsername());
+										ssock.sendLine(new String("Successfully logged in as " + u.getUsername()));
+										/*bw.write("ready");
+										bw.newLine();
+										bw.flush();*/
+										System.out.println("Ready to roll!");
+										/*try{
+											UserEvent ue = new UserEvent();
+											ue.setType("USER_LOGIN");
+											ue.setUsername(u.getUsername());
+											ue.setTimestamp(System.currentTimeMillis());
+											as.processEvent(ue);
+										} catch (RemoteException e) {
+											System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+											//e.printStackTrace();
+										}*/
 									}
 								}
 							}
@@ -168,24 +173,15 @@ public class CommandHandler implements Runnable
 					////////////////////////////////////////////
 				} else if(commandParts[0].equals("!logout")) {
 					if (u == null || !u.isLoggedIn()) {
-						bw.write("You have to login first!");
-						bw.newLine();
-						bw.flush();
-						bw.write("ready");
-						bw.newLine();
-						bw.flush();
+						ssock.sendLine("You have to login first!");
 					} else {
 						String username = u.getUsername();
 						u.setLoggedIn(false);
 						u.setUdpPort(0);
-						bw.write("Successfully logged out as " + username);
-						bw.newLine();
-						bw.flush();
-						bw.write("ready");
-						bw.newLine();
-						bw.flush();
-
-						try{
+						ssock.setIv(null);
+						ssock.setSecretKey(null);
+						ssock.sendLine("Successfully logged out as " + username);
+						/*try{
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
 							ue.setUsername(u.getUsername());
@@ -194,7 +190,7 @@ public class CommandHandler implements Runnable
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 							//e.printStackTrace();
-						}
+						}*/
 					}
 					////////////////////////////////////////////
 					// !create - Client creates an auction
@@ -202,21 +198,11 @@ public class CommandHandler implements Runnable
 				} else if(commandParts[0].equals("!create")) {
 					if (u != null && u.isLoggedIn()) {
 						if (command.split("\\s+", 3).length < 3) {
-							bw.write("Invalid command! Should be !create <duration> <description>");
-							bw.newLine();
-							bw.flush();
-							bw.write("ready");
-							bw.newLine();
-							bw.flush();
+							ssock.sendLine("Invalid command! Should be !create <duration> <description>");
 						} else {
 							String description = command.split("\\s+", 3)[2];
 							if (description.length() > 1000) {
-								bw.write("Description is too long! Limit is 1000 characters!");
-								bw.newLine();
-								bw.flush();
-								bw.write("ready");
-								bw.newLine();
-								bw.flush();
+								ssock.sendLine("Description is too long! Limit is 1000 characters!");
 							} else {
 								long duration = Long.parseLong(command.split("\\s+", 3)[1]);
 								main.setHighestAuctionID(main.getHighestAuctionID()+1);
@@ -224,13 +210,8 @@ public class CommandHandler implements Runnable
 								Date date = new Date(new Date().getTime() + (duration*1000));
 								a.setDate(date);
 								main.auctions.add(a);
-								bw.write("An auction '" + description + "' with id " + a.getId() + " has been created and will end on " 
+								ssock.sendLine("An auction '" + description + "' with id " + a.getId() + " has been created and will end on " 
 										+ date.toString() + ".");
-								bw.newLine();
-								bw.flush();
-								bw.write("ready");
-								bw.newLine();
-								bw.flush();
 								try{
 									AuctionEvent ae = new AuctionEvent();
 									ae.setType("AUCTION_STARTED");
@@ -247,24 +228,14 @@ public class CommandHandler implements Runnable
 							}
 						}
 					} else {
-						bw.write("You have to login first!");
-						bw.newLine();
-						bw.flush();
-						bw.write("ready");
-						bw.newLine();
-						bw.flush();
+						ssock.sendLine("You have to login first!");
 					}
 					////////////////////////////////////////////
 					// !bid - Client bids on an auction
 					////////////////////////////////////////////
 				} else if(commandParts[0].equals("!bid")) {
 					if (commandParts.length != 3) {
-						bw.write("Invalid command! Should be !bid <auction-id> <amount>");
-						bw.newLine();
-						bw.flush();
-						bw.write("ready");
-						bw.newLine();
-						bw.flush();
+						ssock.sendLine("Invalid command! Should be !bid <auction-id> <amount>");
 					} else if (u != null && u.isLoggedIn()) {
 						int id = Integer.parseInt(commandParts[1]);
 						double amount = Double.parseDouble(commandParts[2]);
@@ -273,12 +244,7 @@ public class CommandHandler implements Runnable
 						//amount = Double.parseDouble(amount_string); 
 						Auction a = main.getAuction(id);
 						if (a == null) {
-							bw.write("Error! Auction not found!");
-							bw.newLine();
-							bw.flush();
-							bw.write("ready");
-							bw.newLine();
-							bw.flush();
+							ssock.sendLine("Error! Auction not found!");
 						} else {
 							if (amount > a.getHighestBid()) {
 								/*********************
@@ -305,12 +271,7 @@ public class CommandHandler implements Runnable
 
 								a.setHighestBid(amount);
 								a.setHighestBidder(u);
-								bw.write("You successfully bid with " + amount + " on '" + a.getDescription() + "'.");
-								bw.newLine();
-								bw.flush();
-								bw.write("ready");
-								bw.newLine();
-								bw.flush();
+								ssock.sendLine("You successfully bid with " + amount + " on '" + a.getDescription() + "'.");
 								try{
 									BidEvent be = new BidEvent();
 									be.setType("BID_PLACED");
@@ -325,22 +286,11 @@ public class CommandHandler implements Runnable
 								}
 
 							} else {
-								bw.write("You unsuccessfully bid with " + amount + " on '" + a.getDescription() + "'. ");
-								bw.write("Current highest bid is " + (a.getHighestBid()));
-								bw.newLine();
-								bw.flush();
-								bw.write("ready");
-								bw.newLine();
-								bw.flush();
+								ssock.sendLine("You unsuccessfully bid with " + amount + " on '" + a.getDescription() + "'. Current highest bid is " + (a.getHighestBid()));
 							}
 						}
 					} else {
-						bw.write("You have to login first!");
-						bw.newLine();
-						bw.flush();
-						bw.write("ready");
-						bw.newLine();
-						bw.flush();
+						ssock.sendLine("You have to login first!");
 					}
 					////////////////////////////////////////////
 					// !end - Client requests connection closing
@@ -363,34 +313,31 @@ public class CommandHandler implements Runnable
 						u.setUdpPort(0);
 					}
 				} else {
-					bw.write("Unknown command!");
-					bw.newLine();
-					bw.flush();
-					bw.write("ready");
-					bw.newLine();
-					bw.flush();
+					ssock.sendLine("Unknown command!");
 				}
 			} catch (SocketTimeoutException e) {
 				;
 			} catch (NumberFormatException e) {
-				sendMessage("Invalid format: Found non-number where number was expected!");
+				try {
+					ssock.sendLine("Invalid format: Found non-number where number was expected!");
+				} catch (IOException ex) {
+					u.setLoggedIn(false);
+				}
 			} catch (IOException e) {
-				try{
-					System.out.println("meh");
-					UserEvent ue = new UserEvent();
+				//try{
+				/*UserEvent ue = new UserEvent();
 					ue.setType("USER_DISCONNECTED");
 					ue.setUsername(u.getUsername());
 					ue.setTimestamp(System.currentTimeMillis());
-					as.processEvent(ue);
-					u.setLoggedIn(false);
-					break;
-				} catch (RemoteException e1) {
+					as.processEvent(ue);*/
+				/*} catch (RemoteException e1) {
 					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 					//e1.printStackTrace();
-				}
-
+				}*/
 				System.err.println("Error while communicating with the client!");
 				e.printStackTrace();
+				u.setLoggedIn(false);
+				break;
 			}
 		}
 		///////////////////////////
@@ -405,43 +352,22 @@ public class CommandHandler implements Runnable
 	}
 
 	public void listAuctions() {
+		System.out.println("listAuctions()");
 		try {
 			if (main.auctions.size() > 0) {
 				for (Auction a : main.auctions) {
-					bw.write(a.toString());
-					bw.newLine();
-					bw.flush();
+					ssock.sendLine(a.toString());
 				}
-				bw.write("ready");
-				bw.newLine();
-				bw.flush();
+				ssock.sendLine("ready");
 			} else {
-				bw.write("No auctions available at the moment!");
-				bw.newLine();
-				bw.flush();
-				bw.write("ready");
-				bw.newLine();
-				bw.flush();
+				ssock.sendLine("No auctions available at the moment!");
+				ssock.sendLine("ready");
 			}
 		} catch (IOException e) {
 			System.err.println("Error while returning an auction list!");
 			e.printStackTrace();
 		} catch (ConcurrentModificationException e) {
 			;
-		}
-	}
-
-	public void sendMessage(String message) {
-		try {
-			bw.write(message);
-			bw.newLine();
-			bw.flush();
-			bw.write("ready");
-			bw.newLine();
-			bw.flush();
-		} catch (IOException e) {
-			System.err.println("Error while communicating with the client!");
-			e.printStackTrace();
 		}
 	}
 }

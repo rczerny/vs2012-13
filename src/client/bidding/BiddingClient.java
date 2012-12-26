@@ -12,25 +12,32 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
+import tools.SuperSecureSocket;
+
 public class BiddingClient implements Runnable
 {	
 	private String host = "";
 	private int tcpPort = 0;
 	private int udpPort = 0;
+	private String serverPubKey = "";
+	private String clientsKeyDir = "";
 	private ExecutorService pool = null;
 	private boolean shutdown = false;
 	private static String PROMPT = "> ";
 	private String username = "";
 	private Socket sock;
+	private SuperSecureSocket s;
 
 	public BiddingClient() {
 
 	}
 
-	public BiddingClient(String host, int tcpPort, int udpPort) {
+	public BiddingClient(String host, int tcpPort, int udpPort, String serverPubKey, String clientsKeyDir) {
 		this.host = host;
 		this.tcpPort = tcpPort;
 		this.udpPort = udpPort;
+		this.serverPubKey = serverPubKey;
+		this.clientsKeyDir = clientsKeyDir;
 		pool = Executors.newSingleThreadExecutor();
 	}
 
@@ -46,7 +53,7 @@ public class BiddingClient implements Runnable
 			return;
 		}
 		pool.execute(udpListener);
-		*/
+		 */
 		BufferedReader br = null;
 		BufferedWriter bw = null;
 		BufferedReader keys = null;
@@ -55,8 +62,9 @@ public class BiddingClient implements Runnable
 		sock = null;
 		try {
 			sock = new Socket(host, tcpPort);
-			br = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-			bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream()));
+			s = new SuperSecureSocket(sock, serverPubKey, clientsKeyDir);
+			br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+			bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
 			keys = new BufferedReader(new InputStreamReader(System.in));
 			//sock.setSoTimeout(1000);
 		} catch (IOException e) {
@@ -70,38 +78,46 @@ public class BiddingClient implements Runnable
 				input = keys.readLine();
 				if (input.trim().startsWith("!login")) {
 					input += " " + udpPort;
-				} else {
-					if (input.trim().startsWith("!end")) {
+					answer = s.login(input);
+				} else if (input.trim().startsWith("!end")) {
 						System.out.println("Shutting down...");
 						shutdown = true;
 						break;
+				} else if (input.trim().startsWith("!list")) {
+					s.sendLine(input);
+					String temp = "";
+					while (!(temp = s.readLine()).equals("ready")) {
+						answer += temp;
 					}
+				} else if (input.trim().startsWith("!logout")) {
+					s.setIv(null);
+					s.setSecretKey(null);
+					answer = s.sendAndReceive(input);
+				} else {
+					answer = s.sendAndReceive(input);
 				}
-				bw.write(input);
-				bw.newLine();
-				bw.flush();
-				while (!(answer = br.readLine()).equals("ready")) {
-					if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
-						username = input.trim().split("\\s+")[1];
-						PROMPT =  username + PROMPT;
-						//udpListener.setUsername(username);
-					}
-					if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
-						username = "";
-						PROMPT =  username + "> ";
-					}
-					System.out.println(answer);
+				if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
+					System.out.println("logged in!");
+					username = input.trim().split("\\s+")[1];
+					PROMPT =  username + PROMPT;
+					//udpListener.setUsername(username);
 				}
+				if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
+					username = "";
+					PROMPT =  username + "> ";
+				}
+				System.out.println(answer);
 			} catch (UnknownHostException e) {
 				System.err.println("Host not found!");
 			} catch(SocketTimeoutException e) {
 				System.out.println("BiddingClient SocketTimeout!");
 			} catch (IOException e) {
 				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-				//e.printStackTrace();
+				e.printStackTrace();
 				shutdown = true;
 			} catch (NullPointerException e) {
 				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
+				e.printStackTrace();
 				shutdown = true;
 			}
 		}
@@ -123,17 +139,19 @@ public class BiddingClient implements Runnable
 	}
 
 	public static void main(String[] args) {
-		if (args.length != 3) {
+		if (args.length != 5) {
 			System.err.println("Invalid arguments!");
-			System.err.println("USAGE: java ClientMain <hostname> <tcpPort> <udpPort>");
-			System.err.println("tcpPort and udpPort must be numeric and <= 65535!");
+			System.err.println("USAGE: java ClientMain <serverHostname> <serverPort> <clientPort> <serverPubKey> <clientsKeyDir>");
+			System.err.println("serverPort and clientPort must be numeric and <= 65535!");
 		} else {
 			String host = args[0];
 			try {
-				int tcpPort = Integer.parseInt(args[1]); // check if tcpPort is numeric
-				int udpPort = Integer.parseInt(args[2]); // check if udpPort is numeric
-				if (tcpPort <= 65535 && udpPort <= 65535) {
-					BiddingClient cm = new BiddingClient(host, tcpPort, udpPort);
+				int serverPort = Integer.parseInt(args[1]);
+				int clientPort = Integer.parseInt(args[2]);
+				String serverPubKey = args[3];
+				String clientsKeyDir = args[4];
+				if (serverPort <= 65535 && clientPort <= 65535) {
+					BiddingClient cm = new BiddingClient(host, serverPort, clientPort, serverPubKey, clientsKeyDir);
 					cm.run();
 				} else {
 					System.err.println("tcpPort and udpPort must be numeric and <= 65535!");
