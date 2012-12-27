@@ -3,14 +3,19 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.security.PublicKey;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+
+import org.bouncycastle.openssl.PEMReader;
 
 import tools.SuperSecureSocket;
 
@@ -62,7 +67,11 @@ public class BiddingClient implements Runnable
 		sock = null;
 		try {
 			sock = new Socket(host, tcpPort);
-			s = new SuperSecureSocket(sock, serverPubKey, clientsKeyDir);
+			PEMReader in;
+			PublicKey publicKey = null;
+			in = new PEMReader(new FileReader(serverPubKey));
+			publicKey = (PublicKey) in.readObject();
+			s = new SuperSecureSocket(sock, publicKey, clientsKeyDir);
 			br = new BufferedReader(new InputStreamReader(s.getInputStream()));
 			bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
 			keys = new BufferedReader(new InputStreamReader(System.in));
@@ -72,13 +81,19 @@ public class BiddingClient implements Runnable
 			//e.printStackTrace();
 			shutdown = true;
 		}
+		
 		while(!shutdown) {
 			try {
 				System.out.print(PROMPT);
 				input = keys.readLine();
 				if (input.trim().startsWith("!login")) {
-					input += " " + udpPort;
-					answer = s.login(input);
+					if (s.getIv() == null && s.getSecretKey() == null) {
+						input += " " + udpPort;
+						answer = s.login(input);
+					}
+					else {
+						answer = "Already logged in! Logout first!";
+					}
 				} else if (input.trim().startsWith("!end")) {
 						System.out.println("Shutting down...");
 						shutdown = true;
@@ -87,12 +102,12 @@ public class BiddingClient implements Runnable
 					s.sendLine(input);
 					String temp = "";
 					while (!(temp = s.readLine()).equals("ready")) {
-						answer += temp;
+						answer += "\n" + temp;
 					}
 				} else if (input.trim().startsWith("!logout")) {
+					answer = s.sendAndReceive(input);
 					s.setIv(null);
 					s.setSecretKey(null);
-					answer = s.sendAndReceive(input);
 				} else {
 					answer = s.sendAndReceive(input);
 				}
@@ -107,6 +122,7 @@ public class BiddingClient implements Runnable
 					PROMPT =  username + "> ";
 				}
 				System.out.println(answer);
+				answer = "";
 			} catch (UnknownHostException e) {
 				System.err.println("Host not found!");
 			} catch(SocketTimeoutException e) {
@@ -119,6 +135,9 @@ public class BiddingClient implements Runnable
 				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 				e.printStackTrace();
 				shutdown = true;
+			} catch (Exception e) {
+				System.err.println("Login failed");
+				System.err.println(e.getMessage());
 			}
 		}
 		try {

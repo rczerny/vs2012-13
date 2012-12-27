@@ -1,18 +1,23 @@
 package server.auction;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PasswordFinder;
 
 public class AuctionServer
 {
@@ -24,19 +29,43 @@ public class AuctionServer
 	private boolean shutdown = false;
 	private int highestAuctionID = 0;
 	private Cron tt = null;
-	private String serverPrivKey = "";
+	private PrivateKey serverPrivKey = null;
 	private String clientsKeyDir = "";
 
 	public AuctionServer(int port, String serverPrivKey, String clientsKeyDir) {
 		this.port = port;
 		pool = Executors.newCachedThreadPool();
+		PEMReader in;
+		PrivateKey privateKey = null;
+		try {
+			in = new PEMReader(new FileReader(serverPrivKey), new PasswordFinder() {
+				public char[] getPassword() {
+					char[] privK = null;
+					System.out.println("Enter pass phrase:");
+					try {
+						privK = new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray() ;
+					} catch (IOException e) {
+						System.err.println("Couldn't read password!");
+					}
+					return privK;
+				}
+			});
+			KeyPair keyPair = (KeyPair) in.readObject(); 
+			privateKey = keyPair.getPrivate();
+		} catch (FileNotFoundException e) {
+			System.err.println("Couldn't find private key!");
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Couldn't read Private Key!");
+			e.printStackTrace();
+		}
 		try {
 			ssock = new ServerSocket(this.port);
 			ssock.setSoTimeout(500);
 		} catch (IOException e) {
 			System.err.println("ERROR: Couldn't bind to specified port! It is probably already in use!");
 		}
-		this.serverPrivKey = serverPrivKey;
+		this.serverPrivKey = privateKey;
 		this.clientsKeyDir = clientsKeyDir;
 	}
 
@@ -92,11 +121,11 @@ public class AuctionServer
 		this.highestAuctionID = highestAuctionID;
 	}
 
-	public String getServerPrivKey() {
+	public PrivateKey getServerPrivKey() {
 		return serverPrivKey;
 	}
 
-	public void setServerPrivKey(String serverPrivKey) {
+	public void setServerPrivKey(PrivateKey serverPrivKey) {
 		this.serverPrivKey = serverPrivKey;
 	}
 

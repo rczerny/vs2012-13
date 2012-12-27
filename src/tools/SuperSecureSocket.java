@@ -36,14 +36,14 @@ import org.bouncycastle.util.encoders.Base64;
 public class SuperSecureSocket
 {
 	private Socket s;
-	private String serverPubPrivKey = "";
+	private Key serverPubPrivKey;
 	private String clientsKeyDir = "";
 	private BufferedReader br = null;
 	private BufferedWriter bw = null;
 	private SecretKey secretKey = null;
 	private IvParameterSpec iv = null;
 
-	public SuperSecureSocket(Socket s, String serverPubPrivKey, String clientsKeyDir) {
+	public SuperSecureSocket(Socket s, Key serverPubPrivKey, String clientsKeyDir) {
 		this.s = s;
 		try {
 			br = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -55,20 +55,32 @@ public class SuperSecureSocket
 		this.clientsKeyDir = clientsKeyDir;
 	}
 
-	public String login(String message1) {
+	public String login(String message1) throws IOException, Exception {
 		String result = "";
 		message1 = message1.trim();
 		String[] commandParts = message1.split("\\s+");
 		String username = commandParts[1];
 		byte[] clientChallenge = generateSecureRandomNumber(32);
 		byte[] base64Challenge = Base64.encode(clientChallenge);
-		message1 += " " + new String(Base64.encode(encrypt(base64Challenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", getPEMPublicKey(serverPubPrivKey))));
-		byte[] message2 = sendAndReceive(message1).getBytes();
-		String message2S = new String(message2);
+		System.out.println(base64Challenge.length);
+		System.out.println(new String(base64Challenge));
+		System.out.println(clientChallenge);
+		message1 += " " + new String(Base64.encode(encrypt(base64Challenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", serverPubPrivKey)));
+		String message2S = sendAndReceive(message1);
+		byte[] message2 = message2S.getBytes();
+		if (message2S == null || !message2S.trim().startsWith("!ok"))
+			throw new Exception("Error while sending 1st message!");
 		message2S = message2S.trim();
 		String[] commandParts2 = message2S.split("\\s+");
 		System.out.println("message2 received: " + message2S);
-		message2 = decrypt(Base64.decode(commandParts2[1]), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", getPEMPrivateKey(clientsKeyDir + username + ".pem"));
+		PrivateKey pK = getPEMPrivateKey(clientsKeyDir + username + ".pem");
+		if (pK == null) {
+			sendLine("ERROR");
+			throw new Exception("Error getting the private key");
+		}
+		message2 = decrypt(Base64.decode(commandParts2[1]), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", pK);
+		final String B64 = "a-zA-Z0-9/+";
+		assert ("!ok " + new String(message2)).matches("!ok ["+B64+"]{43}= ["+B64+"]{43}= ["+B64+"]{43}= ["+B64+"]{22}==") : "2nd message";
 		commandParts2 = new String("!ok " + new String(message2)).trim().split("\\s+");
 		byte[] serverChallenge = Base64.decode(commandParts2[2]);
 		SecretKey secretKey = new SecretKeySpec(Base64.decode(commandParts2[3]), "AES");
@@ -84,12 +96,14 @@ public class SuperSecureSocket
 			if (new String(Base64.decode(commandParts2[1].getBytes())).equals(new String(clientChallenge))) {
 				System.out.println("Client Challenges match!");
 				result = new String(sendAndReceive(new String(serverChallenge)));
+				if (result == null || result.equals(""))
+					throw new Exception("Error while sending 3rd message!");
 			}
 		}
 		return result;
 	}
 
-	public String sendAndReceive(String message) {
+	public String sendAndReceive(String message) throws IOException {
 		String answer = "";
 		String result = "";
 		byte[] messageB = message.getBytes();
@@ -103,6 +117,8 @@ public class SuperSecureSocket
 			bw.flush();
 			//while (!(answer = br.readLine()).equals("ready")) {
 			answer = br.readLine();
+			if (answer == null)
+				throw new IOException();
 			byte[] answerB = Base64.decode(answer);
 			if (secretKey != null && iv != null) {
 				answerB = Base64.decode(decrypt(answerB, "AES/CTR/NoPadding", secretKey, iv));
@@ -120,7 +136,12 @@ public class SuperSecureSocket
 
 	public String readLine() throws IOException{
 		String answer = br.readLine();
+		if (answer == null)
+			throw new IOException();
 		byte[] answerB = Base64.decode(answer.getBytes());
+		if (new String(answerB).startsWith("ERROR")) {
+			return "";
+		}
 		if (secretKey != null && iv != null) {
 			answerB = Base64.decode(decrypt(answerB, "AES/CTR/NoPadding", secretKey, iv));
 		}

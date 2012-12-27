@@ -12,6 +12,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 
@@ -90,70 +92,80 @@ public class CommandHandler implements Runnable
 					byte[] clientChallenge = Base64.decode(commandParts[3]);
 					System.out.println(command);
 					System.out.println(commandParts[3]);
-					byte[] clientChallengeB64 = ssock.decrypt(clientChallenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getPEMPrivateKey(main.getServerPrivKey()));
-					clientChallenge = Base64.decode(clientChallengeB64);
-					if (commandParts.length != 4) {
-						ssock.sendLine("Invalid command! Should be !login <username>");
-					} else {
-						if (u != null && u.isLoggedIn()) { // already logged in?
-							ssock.sendLine("You are already logged in as " + u.getUsername() + "\nPlease logout first!");
+					PrivateKey privK = main.getServerPrivKey();
+					if (privK != null) {
+						byte[] clientChallengeB64 = ssock.decrypt(clientChallenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", privK);
+						final String B64 = "a-zA-Z0-9/+";
+						String message1 = new String(commandParts[0]+" "+commandParts[1]+" "+commandParts[2]+" "+ new String(clientChallengeB64));
+						System.out.println(message1);
+						assert message1.matches("!login [a-zA-Z0-9_\\-]+ [0-9]+ ["+B64+"]{43}=") : "1st message";
+						clientChallenge = Base64.decode(clientChallengeB64);
+						if (commandParts.length != 4) {
+							ssock.sendLine("Invalid command! Should be !login <username>");
 						} else {
-							String username = commandParts[1];
-							if (username.length() > 50) { // check if username is too long
-								ssock.sendLine("Username is too long! Limit is 50 characters!");
+							if (u != null && u.isLoggedIn()) { // already logged in?
+								ssock.sendLine("You are already logged in as " + u.getUsername() + "\nPlease logout first!");
 							} else {
-								int udpPort = Integer.parseInt(commandParts[2]);
-								u = main.getUser(username);
-								if (u != null && u.isLoggedIn()) { // is user already logged in at another session?
-									u = null;
-									ssock.sendLine(username + " is already logged in at another session! Logout first!");
+								String username = commandParts[1];
+								if (username.length() > 50) { // check if username is too long
+									ssock.sendLine("Username is too long! Limit is 50 characters!");
 								} else {
-									System.out.println("Key generation!");
-									byte[] secretKey = ssock.generateSecureRandomNumber(32);
-									byte[] serverChallenge = ssock.generateSecureRandomNumber(32);
-									byte[] iv = ssock.generateSecureRandomNumber(16);
-									String message2 = new String(clientChallengeB64) + " " + new String(Base64.encode(serverChallenge)) +
-											" " + new String(Base64.encode(secretKey)) + " " + new String(Base64.encode(iv));
-									byte[] message2B = ssock.encrypt(message2.getBytes(), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getPEMPublicKey(main.getClientsKeyDir() + username + ".pub.pem")); 
-									message2 = "!ok " + new String(Base64.encode(message2B));
-									System.out.println("iv-length: " +iv.length);
-									System.out.println("Just before sending message 2");
-									ssock.sendLine(message2);
-									System.out.println("Just after sending message 2");
-									ssock.setSecretKey(new SecretKeySpec(secretKey, "AES"));
-									ssock.setIv(new IvParameterSpec(iv));
-									String message3 = ssock.readLine();
-									System.out.println("message3: " + message3);
-									if (message3.equals(new String(serverChallenge))) {
-										System.out.println("serverChallenges match!");
-										if (u == null) { // new user?
-											u = new User(sock);
-											u.setUsername(username);
-											u.setUdpPort(udpPort);
-											u.setLoggedIn(true);
-											main.users.add(u);
-										} else { // user is known to the system
-											u.setUdpPort(udpPort);
-											u.setLoggedIn(true);
-											u.setSocket(sock);
-											/*********************
-											 * no UDP in Lab 2
-											 *********************
+									int udpPort = Integer.parseInt(commandParts[2]);
+									u = main.getUser(username);
+									if (u != null && u.isLoggedIn()) { // is user already logged in at another session?
+										u = null;
+										ssock.sendLine(username + " is already logged in at another session! Logout first!");
+									} else {
+										System.out.println("Key generation!");
+										byte[] secretKey = ssock.generateSecureRandomNumber(32);
+										byte[] serverChallenge = ssock.generateSecureRandomNumber(32);
+										byte[] iv = ssock.generateSecureRandomNumber(16);
+										String message2 = new String(clientChallengeB64) + " " + new String(Base64.encode(serverChallenge)) +
+												" " + new String(Base64.encode(secretKey)) + " " + new String(Base64.encode(iv));
+										PublicKey pubK = ssock.getPEMPublicKey(main.getClientsKeyDir() + username + ".pub.pem");
+										if (pubK != null) {
+											byte[] message2B = ssock.encrypt(message2.getBytes(), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", pubK); 
+											message2 = "!ok " + new String(Base64.encode(message2B));
+											System.out.println("iv-length: " +iv.length);
+											System.out.println("Just before sending message 2");
+											ssock.sendLine(message2);
+											System.out.println("Just after sending message 2");
+											ssock.setSecretKey(new SecretKeySpec(secretKey, "AES"));
+											ssock.setIv(new IvParameterSpec(iv));
+											String message3 = ssock.readLine();
+											if (!message3.equals("")) {
+												System.out.println("message3: " + message3);
+												assert new String(Base64.encode(message3.getBytes())).matches("["+B64+"]{43}=") : "3rd message";
+												if (message3.equals(new String(serverChallenge))) {
+													System.out.println("serverChallenges match!");
+													if (u == null) { // new user?
+														u = new User(sock);
+														u.setUsername(username);
+														u.setUdpPort(udpPort);
+														u.setLoggedIn(true);
+														main.users.add(u);
+													} else { // user is known to the system
+														u.setUdpPort(udpPort);
+														u.setLoggedIn(true);
+														u.setSocket(sock);
+														/*********************
+														 * no UDP in Lab 2
+														 *********************
 										if (u.getDueNotifications() != null && u.getDueNotifications().size() > 0) { // any notifications due?
 											for (String message : u.getDueNotifications()) {
 												main.sendNotification(u, message);
 												u.getDueNotifications().remove(message);
 											}
 										}
-											 */
-										}
-										System.out.println("Successfully logged in as " + u.getUsername());
-										ssock.sendLine(new String("Successfully logged in as " + u.getUsername()));
-										/*bw.write("ready");
+														 */
+													}
+													System.out.println("Successfully logged in as " + u.getUsername());
+													ssock.sendLine(new String("Successfully logged in as " + u.getUsername()));
+													/*bw.write("ready");
 										bw.newLine();
 										bw.flush();*/
-										System.out.println("Ready to roll!");
-										/*try{
+													System.out.println("Ready to roll!");
+													/*try{
 											UserEvent ue = new UserEvent();
 											ue.setType("USER_LOGIN");
 											ue.setUsername(u.getUsername());
@@ -163,10 +175,23 @@ public class CommandHandler implements Runnable
 											System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 											//e.printStackTrace();
 										}*/
+												}
+											} else {
+												System.err.println("Failed Login! Client probably couldn't read private key!");
+												ssock.setIv(null);
+												ssock.setSecretKey(null);
+											}
+										} else {
+											System.err.println("Error getting client's public key");
+											ssock.sendLine("Login failed! Client Public Key Error!");
+										}
 									}
 								}
 							}
 						}
+					} else {
+						System.err.println("Error getting the private key");
+						ssock.sendLine("Login failed! Server Private Key Error!");
 					}
 					////////////////////////////////////////////
 					// !logout - Client logs out
@@ -178,9 +203,9 @@ public class CommandHandler implements Runnable
 						String username = u.getUsername();
 						u.setLoggedIn(false);
 						u.setUdpPort(0);
+						ssock.sendLine("Successfully logged out as " + username);
 						ssock.setIv(null);
 						ssock.setSecretKey(null);
-						ssock.sendLine("Successfully logged out as " + username);
 						/*try{
 							UserEvent ue = new UserEvent();
 							ue.setType("USER_LOGOUT");
@@ -337,6 +362,8 @@ public class CommandHandler implements Runnable
 				System.err.println("Error while communicating with the client!");
 				e.printStackTrace();
 				u.setLoggedIn(false);
+				ssock.setIv(null);
+				ssock.setSecretKey(null);
 				break;
 			}
 		}
