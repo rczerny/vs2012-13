@@ -6,15 +6,22 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -353,9 +360,36 @@ public class CommandHandler implements Runnable
 
 	public void listAuctions() {
 		System.out.println("listAuctions()");
+		try{			
+			Key secretKey = ssock.getPEMPrivateKey(main.getClientsKeyDir());
+
+			// create a MAC and initialize with the above key
+			Mac mac = Mac.getInstance(secretKey.getAlgorithm());
+			mac.init(secretKey);
+			String message = "This is a confidential message";
+
+			// get the string as UTF-8 bytes
+			byte[] b = message.getBytes("UTF-8");
+
+			// create a digest from the byte array
+			byte[] digest = mac.doFinal(b);
+		}catch (NoSuchAlgorithmException e) {
+			System.out.println("No Such Algorithm:" + e.getMessage());
+			return;
+		}
+		catch (UnsupportedEncodingException e) {
+			System.out.println("Unsupported Encoding:" + e.getMessage());
+			return;
+		}
+		catch (InvalidKeyException e) {
+			System.out.println("Invalid Key:" + e.getMessage());
+			return;
+		}
+
 		try {
 			if (main.auctions.size() > 0) {
 				for (Auction a : main.auctions) {
+					
 					ssock.sendLine(a.toString());
 				}
 				ssock.sendLine("ready");
