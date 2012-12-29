@@ -3,6 +3,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,6 +14,9 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+
+import javax.crypto.Mac;
 
 import tools.SuperSecureSocket;
 
@@ -87,6 +93,7 @@ public class BiddingClient implements Runnable
 					s.sendLine(input);
 					String temp = "";
 					while (!(temp = s.readLine()).equals("ready")) {
+						System.out.println(verify(temp));
 						answer += temp;
 					}
 				} else if (input.trim().startsWith("!logout")) {
@@ -136,6 +143,43 @@ public class BiddingClient implements Runnable
 
 	public static void printPROMPT() {
 		System.out.print(PROMPT);
+	}
+	
+	private boolean verify(String string) {
+		String[] parts = string.split("\\|");
+		boolean verified = false;
+		try{			
+			Key secretKey = this.s.getSecretKey();
+
+			// create a MAC and initialize with the above key
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(secretKey);
+
+			// get the string as UTF-8 bytes
+			byte[] b = parts[0].getBytes("UTF-8");
+
+			// create a digest from the byte array
+			byte[] digest = mac.doFinal(b);
+			//byte[] test = s.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", s.getSecretKey());
+			//result = string + "|" + test;
+			byte[] hash = parts[1].getBytes("UTF-8");
+			
+			if(digest.equals(hash)) {
+				verified = true;
+			}
+			
+		}catch (NoSuchAlgorithmException e) {
+			System.out.println("No Such Algorithm:" + e.getMessage());
+		}
+		catch (UnsupportedEncodingException e) {
+			System.out.println("Unsupported Encoding:" + e.getMessage());
+		}
+		catch (InvalidKeyException e) {
+			System.out.println("Invalid Key:" + e.getMessage());
+		}
+
+		
+		return verified;
 	}
 
 	public static void main(String[] args) {

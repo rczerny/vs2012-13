@@ -360,37 +360,11 @@ public class CommandHandler implements Runnable
 
 	public void listAuctions() {
 		System.out.println("listAuctions()");
-		try{			
-			Key secretKey = ssock.getPEMPrivateKey(main.getClientsKeyDir());
-
-			// create a MAC and initialize with the above key
-			Mac mac = Mac.getInstance(secretKey.getAlgorithm());
-			mac.init(secretKey);
-			String message = "This is a confidential message";
-
-			// get the string as UTF-8 bytes
-			byte[] b = message.getBytes("UTF-8");
-
-			// create a digest from the byte array
-			byte[] digest = mac.doFinal(b);
-		}catch (NoSuchAlgorithmException e) {
-			System.out.println("No Such Algorithm:" + e.getMessage());
-			return;
-		}
-		catch (UnsupportedEncodingException e) {
-			System.out.println("Unsupported Encoding:" + e.getMessage());
-			return;
-		}
-		catch (InvalidKeyException e) {
-			System.out.println("Invalid Key:" + e.getMessage());
-			return;
-		}
-
 		try {
 			if (main.auctions.size() > 0) {
 				for (Auction a : main.auctions) {
-					
-					ssock.sendLine(a.toString());
+					String message = sign(a.toString());
+					ssock.sendLine(message);
 				}
 				ssock.sendLine("ready");
 			} else {
@@ -403,5 +377,35 @@ public class CommandHandler implements Runnable
 		} catch (ConcurrentModificationException e) {
 			;
 		}
+	}
+
+	private String sign(String s) {
+		String result = "";
+		try{			
+			Key secretKey = ssock.getSecretKey();
+
+			// create a MAC and initialize with the above key
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(secretKey);
+
+			// get the string as UTF-8 bytes
+			byte[] b = s.getBytes("UTF-8");
+
+			// create a digest from the byte array
+			byte[] digest = mac.doFinal(b);
+			byte[] test = ssock.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getSecretKey());
+			result = s + "|" + digest;
+
+		}catch (NoSuchAlgorithmException e) {
+			System.out.println("No Such Algorithm:" + e.getMessage());
+		}
+		catch (UnsupportedEncodingException e) {
+			System.out.println("Unsupported Encoding:" + e.getMessage());
+		}
+		catch (InvalidKeyException e) {
+			System.out.println("Invalid Key:" + e.getMessage());
+		}
+
+		return result;
 	}
 }
