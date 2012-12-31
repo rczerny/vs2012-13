@@ -3,19 +3,28 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.util.encoders.Hex;
 
 import tools.SuperSecureSocket;
 
@@ -81,7 +90,7 @@ public class BiddingClient implements Runnable
 			//e.printStackTrace();
 			shutdown = true;
 		}
-		
+
 		while(!shutdown) {
 			try {
 				System.out.print(PROMPT);
@@ -95,13 +104,14 @@ public class BiddingClient implements Runnable
 						answer = "Already logged in! Logout first!";
 					}
 				} else if (input.trim().startsWith("!end")) {
-						System.out.println("Shutting down...");
-						shutdown = true;
-						break;
+					System.out.println("Shutting down...");
+					shutdown = true;
+					break;
 				} else if (input.trim().startsWith("!list")) {
 					s.sendLine(input);
 					String temp = "";
 					while (!(temp = s.readLine()).equals("ready")) {
+						System.out.println(verify(temp));
 						answer += "\n" + temp;
 					}
 				} else if (input.trim().startsWith("!logout")) {
@@ -156,6 +166,67 @@ public class BiddingClient implements Runnable
 	public static void printPROMPT() {
 		System.out.print(PROMPT);
 	}
+
+	private boolean verify(String string) {
+		String[] parts = string.split(" ");
+		boolean verified = false;
+		try{			
+			byte[] keyBytes = new byte[1024];
+			System.out.println(username);
+			String pathToSecretKey = clientsKeyDir+"\\"+ username + ".key";
+			FileInputStream fis = new FileInputStream(pathToSecretKey);
+			fis.read(keyBytes);
+			fis.close();
+			byte[] input = Hex.decode(keyBytes);
+			// make sure to use the right ALGORITHM for what you want to do
+			// (see text)
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
+			// create a MAC and initialize with the above key
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(secretKey);
+
+			//hash abschneiden
+			String message = "";
+			
+			for(int i = 0; i<parts.length-1;i++) {
+				if(i == 0) {
+					message = message + parts[i];
+				} else {
+					message = message + " " + parts[i];
+				}
+			}
+			
+			System.out.println("--"+message);
+			// get the string as UTF-8 bytes
+			byte[] b = message.getBytes("UTF-8");
+
+			// create a digest from the byte array
+			byte[] digest = mac.doFinal(b);
+			//byte[] test = s.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", s.getSecretKey());
+			//result = string + "|" + test;
+			byte[] hash = parts[parts.length-1].getBytes("UTF-8");
+			System.out.println("--------- " + digest.toString());
+			if(digest.equals(hash)) {
+				verified = true;
+			}
+
+		}catch (NoSuchAlgorithmException e) {
+			System.out.println("No Such Algorithm:" + e.getMessage());
+		}
+		catch (UnsupportedEncodingException e) {
+			System.out.println("Unsupported Encoding:" + e.getMessage());
+		}
+		catch (InvalidKeyException e) {
+			System.out.println("Invalid Key:" + e.getMessage());
+		} catch (IOException e) {
+			System.out.println("I/O Exception:" + e.getMessage());
+		}
+
+		System.out.println(verified);
+
+		return verified;
+	}
+
 
 	public static void main(String[] args) {
 		if (args.length != 5) {

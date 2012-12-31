@@ -2,25 +2,32 @@ package server.auction;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 
 import server.analytics.AnalyticsServerRMI;
 import server.analytics.AuctionEvent;
@@ -383,7 +390,8 @@ public class CommandHandler implements Runnable
 		try {
 			if (main.auctions.size() > 0) {
 				for (Auction a : main.auctions) {
-					ssock.sendLine(a.toString());
+					//System.out.println(sign(a.toString()));
+					ssock.sendLine(sign(a.toString()));
 				}
 				ssock.sendLine("ready");
 			} else {
@@ -396,5 +404,43 @@ public class CommandHandler implements Runnable
 		} catch (ConcurrentModificationException e) {
 			;
 		}
+	}
+	
+	private String sign(String s) {
+		String result = "";
+		try{			
+			byte[] keyBytes = new byte[1024];
+			System.out.println(u.getUsername());
+			String pathToSecretKey = main.getClientsKeyDir()+"\\"+ u.getUsername() + ".key";
+			FileInputStream fis = new FileInputStream(pathToSecretKey);
+			fis.read(keyBytes);
+			fis.close();
+			byte[] input = Hex.decode(keyBytes);
+			
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
+
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(secretKey);
+
+			byte[] b = s.getBytes("UTF-8");
+
+			byte[] digest = mac.doFinal(b);
+			//byte[] test = ssock.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getSecretKey());
+			result = s + " " + digest;
+
+		}catch (NoSuchAlgorithmException e) {
+			System.out.println("No Such Algorithm:" + e.getMessage());
+		}
+		catch (UnsupportedEncodingException e) {
+			System.out.println("Unsupported Encoding:" + e.getMessage());
+		}
+		catch (InvalidKeyException e) {
+			System.out.println("Invalid Key:" + e.getMessage());
+		} 
+		catch (IOException e) {
+			System.out.println("I/O Exception:" + e.getMessage());
+		}
+
+		return result;
 	}
 }
