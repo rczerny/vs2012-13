@@ -390,20 +390,16 @@ public class CommandHandler implements Runnable
 			fis.read(keyBytes);
 			fis.close();
 			byte[] input = Hex.decode(keyBytes);
-			// make sure to use the right ALGORITHM for what you want to do
-			// (see text)
+			
 			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
 
-			// create a MAC and initialize with the above key
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
 
-			// get the string as UTF-8 bytes
 			byte[] b = s.getBytes("UTF-8");
 
-			// create a digest from the byte array
 			byte[] digest = mac.doFinal(b);
-			byte[] test = ssock.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getSecretKey());
+			//byte[] test = ssock.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getSecretKey());
 			result = s + " " + digest;
 
 		}catch (NoSuchAlgorithmException e) {
