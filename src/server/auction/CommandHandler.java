@@ -2,6 +2,7 @@ package server.auction;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,6 +27,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 
 import server.analytics.AnalyticsServerRMI;
 import server.analytics.AuctionEvent;
@@ -382,7 +384,15 @@ public class CommandHandler implements Runnable
 	private String sign(String s) {
 		String result = "";
 		try{			
-			Key secretKey = ssock.getSecretKey();
+			byte[] keyBytes = new byte[1024];
+			String pathToSecretKey = main.getClientsKeyDir()+"\\"+ u.getUsername() + ".key";
+			FileInputStream fis = new FileInputStream(pathToSecretKey);
+			fis.read(keyBytes);
+			fis.close();
+			byte[] input = Hex.decode(keyBytes);
+			// make sure to use the right ALGORITHM for what you want to do
+			// (see text)
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
 
 			// create a MAC and initialize with the above key
 			Mac mac = Mac.getInstance("HmacSHA256");
@@ -394,7 +404,7 @@ public class CommandHandler implements Runnable
 			// create a digest from the byte array
 			byte[] digest = mac.doFinal(b);
 			byte[] test = ssock.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getSecretKey());
-			result = s + "|" + digest;
+			result = s + " " + digest;
 
 		}catch (NoSuchAlgorithmException e) {
 			System.out.println("No Such Algorithm:" + e.getMessage());
@@ -404,6 +414,9 @@ public class CommandHandler implements Runnable
 		}
 		catch (InvalidKeyException e) {
 			System.out.println("Invalid Key:" + e.getMessage());
+		} 
+		catch (IOException e) {
+			System.out.println("I/O Exception:" + e.getMessage());
 		}
 
 		return result;

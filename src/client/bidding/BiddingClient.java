@@ -11,12 +11,17 @@ import java.util.concurrent.Executors;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 
 import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.util.encoders.Hex;
 
 import tools.SuperSecureSocket;
 
@@ -93,7 +98,7 @@ public class BiddingClient implements Runnable
 					s.sendLine(input);
 					String temp = "";
 					while (!(temp = s.readLine()).equals("ready")) {
-						System.out.println(verify(temp));
+						verify(temp);
 						answer += temp;
 					}
 				} else if (input.trim().startsWith("!logout")) {
@@ -146,11 +151,18 @@ public class BiddingClient implements Runnable
 	}
 	
 	private boolean verify(String string) {
-		String[] parts = string.split("\\|");
+		String[] parts = string.split(" ");
 		boolean verified = false;
 		try{			
-			Key secretKey = this.s.getSecretKey();
-
+			byte[] keyBytes = new byte[1024];
+			String pathToSecretKey = clientsKeyDir+"\\"+ username + ".key";
+			FileInputStream fis = new FileInputStream(pathToSecretKey);
+			fis.read(keyBytes);
+			fis.close();
+			byte[] input = Hex.decode(keyBytes);
+			// make sure to use the right ALGORITHM for what you want to do
+			// (see text)
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
 			// create a MAC and initialize with the above key
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
@@ -162,7 +174,7 @@ public class BiddingClient implements Runnable
 			byte[] digest = mac.doFinal(b);
 			//byte[] test = s.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", s.getSecretKey());
 			//result = string + "|" + test;
-			byte[] hash = parts[1].getBytes("UTF-8");
+			byte[] hash = parts[parts.length-1].getBytes("UTF-8");
 			
 			if(digest.equals(hash)) {
 				verified = true;
@@ -176,8 +188,11 @@ public class BiddingClient implements Runnable
 		}
 		catch (InvalidKeyException e) {
 			System.out.println("Invalid Key:" + e.getMessage());
+		} catch (IOException e) {
+			System.out.println("I/O Exception:" + e.getMessage());
 		}
-
+		
+		System.out.println(verified);
 		
 		return verified;
 	}
