@@ -1,4 +1,5 @@
 package client.bidding;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -24,6 +25,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
 import tools.SuperSecureSocket;
@@ -172,22 +174,19 @@ public class BiddingClient implements Runnable
 		boolean verified = false;
 		try{			
 			byte[] keyBytes = new byte[1024];
-			System.out.println(username);
 			String pathToSecretKey = clientsKeyDir+"\\"+ username + ".key";
 			FileInputStream fis = new FileInputStream(pathToSecretKey);
 			fis.read(keyBytes);
 			fis.close();
 			byte[] input = Hex.decode(keyBytes);
-			// make sure to use the right ALGORITHM for what you want to do
-			// (see text)
-			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
-			// create a MAC and initialize with the above key
+
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA");
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
 
 			//hash abschneiden
 			String message = "";
-			
+
 			for(int i = 0; i<parts.length-1;i++) {
 				if(i == 0) {
 					message = message + parts[i];
@@ -196,17 +195,19 @@ public class BiddingClient implements Runnable
 				}
 			}
 			
-			System.out.println("--"+message);
 			// get the string as UTF-8 bytes
 			byte[] b = message.getBytes("UTF-8");
 
 			// create a digest from the byte array
 			byte[] digest = mac.doFinal(b);
-			//byte[] test = s.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", s.getSecretKey());
-			//result = string + "|" + test;
+			byte[] encoded = Base64.encode(digest);
 			byte[] hash = parts[parts.length-1].getBytes("UTF-8");
-			System.out.println("--------- " + digest.toString());
-			if(digest.equals(hash)) {
+
+			String h = new String(hash);
+			String p = new String(encoded);
+			System.out.println("h:"+h);
+			System.out.println("p:"+p);
+			if(p.equals(h)) {
 				verified = true;
 			}
 

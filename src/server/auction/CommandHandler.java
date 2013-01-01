@@ -390,8 +390,8 @@ public class CommandHandler implements Runnable
 		try {
 			if (main.auctions.size() > 0) {
 				for (Auction a : main.auctions) {
-					//System.out.println(sign(a.toString()));
 					ssock.sendLine(sign(a.toString()));
+					//ssock.sendLine(a.toString());
 				}
 				ssock.sendLine("ready");
 			} else {
@@ -410,23 +410,23 @@ public class CommandHandler implements Runnable
 		String result = "";
 		try{			
 			byte[] keyBytes = new byte[1024];
-			System.out.println(u.getUsername());
 			String pathToSecretKey = main.getClientsKeyDir()+"\\"+ u.getUsername() + ".key";
 			FileInputStream fis = new FileInputStream(pathToSecretKey);
 			fis.read(keyBytes);
 			fis.close();
 			byte[] input = Hex.decode(keyBytes);
 			
-			Key secretKey = new SecretKeySpec(input,"SHA512withRSA"); 
-
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA");
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
 
 			byte[] b = s.getBytes("UTF-8");
-
+			
 			byte[] digest = mac.doFinal(b);
-			//byte[] test = ssock.encrypt(digest, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", ssock.getSecretKey());
-			result = s + " " + digest;
+			byte[] encoded = Base64.encode(digest); 
+			
+			String hash = new String(encoded);
+			result = s + " " + hash;
 
 		}catch (NoSuchAlgorithmException e) {
 			System.out.println("No Such Algorithm:" + e.getMessage());
