@@ -112,10 +112,21 @@ public class BiddingClient implements Runnable
 				} else if (input.trim().startsWith("!list")) {
 					s.sendLine(input);
 					String temp = "";
-					while (!(temp = s.readLine()).equals("ready")) {
-						System.out.println(verify(temp));
-						answer += "\n" + temp;
+					int mismatch = 0;
+					if(username.equals("")) {
+						while (!(temp = s.readLine()).equals("ready")) {
+							answer += "\n" + temp;
+						}
+					} else {
+						while (!(temp = s.readLine()).equals("ready")) {
+							if(!verify(temp)) {
+								mismatch++;
+								System.out.println(verify(temp) + "--" + mismatch);
+							}
+							answer += "\n" + temp;
+						}
 					}
+					//s.sendLine("!list");
 				} else if (input.trim().startsWith("!logout")) {
 					answer = s.sendAndReceive(input);
 					s.setIv(null);
@@ -194,7 +205,7 @@ public class BiddingClient implements Runnable
 					message = message + " " + parts[i];
 				}
 			}
-			
+
 			// get the string as UTF-8 bytes
 			byte[] b = message.getBytes("UTF-8");
 

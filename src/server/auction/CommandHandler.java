@@ -389,9 +389,16 @@ public class CommandHandler implements Runnable
 		System.out.println("listAuctions()");
 		try {
 			if (main.auctions.size() > 0) {
-				for (Auction a : main.auctions) {
-					ssock.sendLine(sign(a.toString()));
-					//ssock.sendLine(a.toString());
+				// wenn eingeloggt signieren sonst normal versenden
+				//
+				if(u.isLoggedIn()) {
+					for (Auction a : main.auctions) {
+						ssock.sendLine(sign(a.toString()));
+					}
+				} else {
+					for (Auction a : main.auctions) {
+						ssock.sendLine(a.toString());
+					}
 				}
 				ssock.sendLine("ready");
 			} else {
@@ -405,7 +412,7 @@ public class CommandHandler implements Runnable
 			;
 		}
 	}
-	
+
 	private String sign(String s) {
 		String result = "";
 		try{			
@@ -415,16 +422,16 @@ public class CommandHandler implements Runnable
 			fis.read(keyBytes);
 			fis.close();
 			byte[] input = Hex.decode(keyBytes);
-			
+
 			Key secretKey = new SecretKeySpec(input,"SHA512withRSA");
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
 
 			byte[] b = s.getBytes("UTF-8");
-			
+
 			byte[] digest = mac.doFinal(b);
 			byte[] encoded = Base64.encode(digest); 
-			
+
 			String hash = new String(encoded);
 			result = s + " " + hash;
 
