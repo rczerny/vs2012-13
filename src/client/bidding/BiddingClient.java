@@ -112,25 +112,40 @@ public class BiddingClient implements Runnable
 				} else if (input.trim().startsWith("!list")) {
 					s.sendLine(input);
 					String temp = "";
-					int mismatch = 0;
+					boolean mismatch = false;
 					if(username.equals("")) {
 						while (!(temp = s.readLine()).equals("ready")) {
 							answer += "\n" + temp;
 						}
 					} else {
+
 						while (!(temp = s.readLine()).equals("ready")) {
 							if(!verify(temp)) {
-								mismatch++;
-								System.out.println(verify(temp) + "--" + mismatch);
+								mismatch = true;
 							}
-							answer += "\n" + temp;
+							System.out.println(verify(temp));
+							answer += "\n" + removeHash(temp);
 						}
-					}
-					
-					//
-					
-					//
-					//s.sendLine("!list");
+						//
+
+						if(mismatch) {
+							System.out.println("Verification failed!!! \n" + answer);
+							answer = "";
+							mismatch= false;
+							s.sendLine("!verify");
+							while (!(temp = s.readLine()).equals("ready")) {
+								if(!verify(temp)) {
+									mismatch = true;
+								}
+								System.out.println(verify(temp));
+								answer += "\n" + removeHash(temp);
+							}
+							if(mismatch) {
+								answer += "\n Verification failed again!!";
+							}
+						}
+						
+					}					
 				} else if (input.trim().startsWith("!logout")) {
 					answer = s.sendAndReceive(input);
 					s.setIv(null);
@@ -199,17 +214,8 @@ public class BiddingClient implements Runnable
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
 
-			//hash abschneiden
-			String message = "";
-
-			for(int i = 0; i<parts.length-1;i++) {
-				if(i == 0) {
-					message = message + parts[i];
-				} else {
-					message = message + " " + parts[i];
-				}
-			}
-
+			String message = removeHash(string);
+			
 			// get the string as UTF-8 bytes
 			byte[] b = message.getBytes("UTF-8");
 
@@ -220,8 +226,8 @@ public class BiddingClient implements Runnable
 
 			String h = new String(hash);
 			String p = new String(encoded);
-			System.out.println("h:"+h);
-			System.out.println("p:"+p);
+			//System.out.println("h:"+h);
+			//System.out.println("p:"+p);
 			if(p.equals(h)) {
 				verified = true;
 			}
@@ -238,11 +244,26 @@ public class BiddingClient implements Runnable
 			System.out.println("I/O Exception:" + e.getMessage());
 		}
 
-		System.out.println(verified);
+		//System.out.println(verified);
 
 		return verified;
 	}
-
+	
+	//removes Hash
+	private String removeHash(String s) {
+		String[] parts = s.split(" ");
+		String message = "";
+		
+		for(int i = 0; i<parts.length-1;i++) {
+			if(i == 0) {
+				message = message + parts[i];
+			} else {
+				message = message + " " + parts[i];
+			}
+		}
+		//
+		return message;
+	}
 
 	public static void main(String[] args) {
 		if (args.length != 5) {

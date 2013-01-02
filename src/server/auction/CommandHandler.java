@@ -379,8 +379,10 @@ public class CommandHandler implements Runnable
 						ssock.sendLine("You have to login first!");
 					}
 					////////////////////////////////////////////
-					// !end - Client requests connection closing
+					// !verify - Client requests list again
 					////////////////////////////////////////////
+				}else if(commandParts[0].equals("!verify")) {
+					verifyListAuctions();
 				} else if(commandParts[0].equals("!end")) {
 					localShutdown = true;
 					if (u != null && u.isLoggedIn()) {
@@ -468,6 +470,29 @@ public class CommandHandler implements Runnable
 		}
 	}
 
+	public void verifyListAuctions() {
+		System.out.println("verifyListAuctions()");
+		try {
+			if (main.auctions.size() > 0) {
+				if(u.isLoggedIn()) {
+					for (Auction a : main.auctions) {
+						ssock.sendLine(sign(a.toString()));
+					}
+				}
+				ssock.sendLine("ready");
+			} else {
+				ssock.sendLine("No auctions available at the moment!");
+				ssock.sendLine("ready");
+			}
+		} catch (IOException e) {
+			System.err.println("Error while returning an auction list!");
+			e.printStackTrace();
+		} catch (ConcurrentModificationException e) {
+			;
+		}
+		//
+	}
+
 	private String sign(String s) {
 		String result = "";
 		try{			
@@ -478,6 +503,7 @@ public class CommandHandler implements Runnable
 			fis.close();
 			byte[] input = Hex.decode(keyBytes);
 
+			//
 			Key secretKey = new SecretKeySpec(input,"SHA512withRSA");
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
@@ -490,6 +516,7 @@ public class CommandHandler implements Runnable
 			String hash = new String(encoded);
 			result = s + " " + hash;
 
+			//
 		}catch (NoSuchAlgorithmException e) {
 			System.out.println("No Such Algorithm:" + e.getMessage());
 		}
@@ -502,6 +529,8 @@ public class CommandHandler implements Runnable
 		catch (IOException e) {
 			System.out.println("I/O Exception:" + e.getMessage());
 		}
+		
+		//
 
 		return result;
 	}
