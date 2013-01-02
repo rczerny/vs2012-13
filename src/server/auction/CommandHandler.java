@@ -355,22 +355,25 @@ public class CommandHandler implements Runnable
 					////////////////////////////////////////////
 				} else if(commandParts[0].equals("!confirm")) {
 					if (commandParts.length != 4) {
-						ssock.sendLine("Invalid command! Should be !confirm <auction-id> <amount> <username>");
+						ssock.sendLine("Invalid command! Should be !confirm <auction-id> <amount> <bidder>");
 					} else if (u != null && u.isLoggedIn()) {
 						int id = Integer.parseInt(commandParts[1]);
 						double amount = Double.parseDouble(commandParts[2]);
+						String bidder = commandParts[3];
 						//DecimalFormat f = new DecimalFormat("#0.00");
 						//String amount_string = f.format(amount);
 						//amount = Double.parseDouble(amount_string); 
-						Auction a = main.getAuction(id);
-						if (a == null) {
-							ssock.sendLine("Error! Auction not found!");
+						GroupBid gb = main.getGroupBid(id, amount, bidder);
+						if (gb == null) {
+							ssock.sendLine("Error! GroubBid not found!");
 						} else {
-							if (amount > a.getHighestBid()) {
-								ssock.sendLine("Your groupBid with " + amount + " on '" + a.getDescription() + "' needs to be confirmed by two other users.");
+							gb.confirm(u.getUsername());
+							if(gb.isConfirmed()) {
+								ssock.sendLine("!confirmed");
 							} else {
-								ssock.sendLine("!rejected Please use a higher bid price. Current highest bid is " + (a.getHighestBid()));
+								ssock.sendLine("You have to wait for another user to confirm the groupBid");
 							}
+							System.out.println(gb.isConfirmed());
 						}
 					} else {
 						ssock.sendLine("You have to login first!");
@@ -390,6 +393,7 @@ public class CommandHandler implements Runnable
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 							//e.printStackTrace();
+							//
 						}
 						u.setLoggedIn(false);
 						//u.setSocket(null);

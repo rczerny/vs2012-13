@@ -17,7 +17,7 @@ public class GroupBid {
 		groupUser.add(user);
 	}
 	
-	public boolean getConfirmed() {
+	public boolean isConfirmed() {
 		return confirmed;
 	}
 	

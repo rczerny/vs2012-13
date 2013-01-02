@@ -126,6 +126,10 @@ public class BiddingClient implements Runnable
 							answer += "\n" + temp;
 						}
 					}
+					
+					//
+					
+					//
 					//s.sendLine("!list");
 				} else if (input.trim().startsWith("!logout")) {
 					answer = s.sendAndReceive(input);

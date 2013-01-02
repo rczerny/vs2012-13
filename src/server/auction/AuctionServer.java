@@ -159,6 +159,17 @@ public class AuctionServer
 		}
 		return result;
 	}
+	
+	public GroupBid getGroupBid(int id, double amount, String bidder) {
+		GroupBid result = null;
+		for (GroupBid gb : groupBids) {
+			if (gb.getAuctionId() == id && gb.getAmount() == amount && gb.getUser().equals(bidder)) {
+				result = gb;
+				break;
+			}
+		}
+		return result;
+	}
 
 	public void sendNotification(User user, String message) {
 		;
