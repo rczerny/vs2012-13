@@ -24,6 +24,7 @@ public class AuctionServer
 	private ExecutorService pool = null;
 	protected Set<User> users = Collections.synchronizedSet(new HashSet<User>());
 	protected Set<Auction> auctions = Collections.synchronizedSet(new HashSet<Auction>());
+	protected Set<GroupBid> groupBids = Collections.synchronizedSet(new HashSet<GroupBid>());
 	private ServerSocket ssock = null;
 	private int port = 0;
 	private boolean shutdown = false;

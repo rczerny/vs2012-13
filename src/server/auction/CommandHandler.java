@@ -325,6 +325,57 @@ public class CommandHandler implements Runnable
 						ssock.sendLine("You have to login first!");
 					}
 					////////////////////////////////////////////
+					// !groupBid - Client creates groupBid
+					////////////////////////////////////////////
+				}else if(commandParts[0].equals("!groupBid")) {
+					if (commandParts.length != 3) {
+						ssock.sendLine("Invalid command! Should be !groupBid <auction-id> <amount>");
+					} else if (u != null && u.isLoggedIn()) {
+						int id = Integer.parseInt(commandParts[1]);
+						double amount = Double.parseDouble(commandParts[2]);
+						//DecimalFormat f = new DecimalFormat("#0.00");
+						//String amount_string = f.format(amount);
+						//amount = Double.parseDouble(amount_string); 
+						Auction a = main.getAuction(id);
+						if (a == null) {
+							ssock.sendLine("Error! Auction not found!");
+						} else {
+							if (amount > a.getHighestBid()) {
+								main.groupBids.add(new GroupBid(u.getUsername(), id, amount));
+								ssock.sendLine("Your groupBid with " + amount + " on '" + a.getDescription() + "' needs to be confirmed by two other users.");
+							} else {
+								ssock.sendLine("!rejected Please use a higher bid price. Current highest bid is " + (a.getHighestBid()));
+							}
+						}
+					} else {
+						ssock.sendLine("You have to login first!");
+					}
+					////////////////////////////////////////////
+					// !confirm - Client confirms groupBid
+					////////////////////////////////////////////
+				} else if(commandParts[0].equals("!confirm")) {
+					if (commandParts.length != 4) {
+						ssock.sendLine("Invalid command! Should be !confirm <auction-id> <amount> <username>");
+					} else if (u != null && u.isLoggedIn()) {
+						int id = Integer.parseInt(commandParts[1]);
+						double amount = Double.parseDouble(commandParts[2]);
+						//DecimalFormat f = new DecimalFormat("#0.00");
+						//String amount_string = f.format(amount);
+						//amount = Double.parseDouble(amount_string); 
+						Auction a = main.getAuction(id);
+						if (a == null) {
+							ssock.sendLine("Error! Auction not found!");
+						} else {
+							if (amount > a.getHighestBid()) {
+								ssock.sendLine("Your groupBid with " + amount + " on '" + a.getDescription() + "' needs to be confirmed by two other users.");
+							} else {
+								ssock.sendLine("!rejected Please use a higher bid price. Current highest bid is " + (a.getHighestBid()));
+							}
+						}
+					} else {
+						ssock.sendLine("You have to login first!");
+					}
+					////////////////////////////////////////////
 					// !end - Client requests connection closing
 					////////////////////////////////////////////
 				} else if(commandParts[0].equals("!end")) {
