@@ -131,6 +131,7 @@ public class CommandHandler implements Runnable
 						////////////////////////////////////////////
 						// !login - Client logs in
 						////////////////////////////////////////////
+						
 					} else if(commandParts[0].equals("!login")) {
 						byte[] clientChallenge = Base64.decode(commandParts[3]);
 						System.out.println(command);
