@@ -24,6 +24,7 @@ public class AuctionServer
 	private ExecutorService pool = null;
 	protected Set<User> users = Collections.synchronizedSet(new HashSet<User>());
 	protected Set<Auction> auctions = Collections.synchronizedSet(new HashSet<Auction>());
+	protected Set<GroupBid> groupBids = Collections.synchronizedSet(new HashSet<GroupBid>());
 	private ServerSocket ssock = null;
 	private int port = 0;
 	private boolean shutdown = false;
@@ -181,6 +182,47 @@ public class AuctionServer
 			System.err.println("Error setting stop-state of server!");
 			e.printStackTrace();
 		}
+	}
+
+	public GroupBid getGroupBid(int id, double amount, String bidder) {
+		GroupBid result = null;
+		for (GroupBid gb : groupBids) {
+			if (gb.getAuctionId() == id && gb.getAmount() == amount && gb.getUser().equals(bidder)) {
+				result = gb;
+				break;
+			}
+		}
+		return result;
+	}
+
+	public boolean checkGroupBid(GroupBid gb) {
+		boolean allowed = false;
+		Set<Integer> activeAuctions = new HashSet<Integer>();
+		int activeUser = 0;
+
+		for(Auction a: auctions) {
+			if(gb.getAuctionId() == a.getId()) {
+				activeAuctions.add(gb.getAuctionId());
+			}
+
+			for(GroupBid g:groupBids) {
+				if(g.getAuctionId() == a.getId()) {
+					activeAuctions.add(g.getAuctionId());
+				}
+			}			
+		}
+
+		for(User u: users) {
+			if(u.isLoggedIn()) {
+				activeUser++;
+			}
+		}
+
+		if(activeAuctions.size()<= activeUser) {
+			allowed = true;
+		}
+
+		return allowed;
 	}
 
 	public void sendNotification(User user, String message) {

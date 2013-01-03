@@ -1,23 +1,32 @@
 package client.bidding;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 
 import tools.SuperSecureSocket;
 
@@ -31,6 +40,7 @@ public class BiddingClient implements Runnable
 	private ExecutorService pool = null;
 	private boolean shutdown = false;
 	private boolean serverDown = false;
+	private boolean blocked = false;
 	private static String PROMPT = "> ";
 	private String username = "";
 	private ArrayList<User> activeUsers;
@@ -39,6 +49,7 @@ public class BiddingClient implements Runnable
 	private ArrayList<String> signedBids = new ArrayList<String>();
 	private BufferedReader br = null;
 	private BufferedWriter bw = null;
+	boolean b = false;
 
 	public BiddingClient() {
 
@@ -83,100 +94,167 @@ public class BiddingClient implements Runnable
 			System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 			//e.printStackTrace();
 			shutdown = true;
+			//
 		}
 
 		while(!shutdown) {
 			try {
-				System.out.print(PROMPT);
-				input = keys.readLine();
-				if (serverDown) {
-					if (input.trim().startsWith("!bid") && activeUsers != null) {
-						if (activeUsers.size() < 2) {
-							System.err.println("Can't create signedBid, too few other clients!");
+				if(blocked) {
+					try {
+						String a = s.readLine();
+						if(a.equals("!confirmed")) {
+							blocked = false;
+							System.out.println("!confirmed");
+						} else if(s.readLine().equals("!rejected")) {
+							blocked = false;
+							b = true;
+							System.out.println("!rejected " + blocked);
+							answer = "rejected";
 						} else {
-							int random1 = 0;
-							int random2 = 0;
-							while (random1 == random2) {
-								random1 = new Random().nextInt(activeUsers.size());
-								random2 = new Random().nextInt(activeUsers.size());
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
 							}
-							String[] commandParts = input.trim().split("\\s+");
-							String bid = commandParts[1];
-							double amount = Double.parseDouble(commandParts[2]);
-							User user1 = activeUsers.get(random1);
-							User user2 = activeUsers.get(random2);
-							System.out.println("User1: " + user1.getHost() + " - " + user1.getTcpPort());
-							System.out.println("User2: " + user2.getHost() + " - " + user2.getTcpPort());
-							Socket s1 = new Socket(user1.getHost(), user1.getTcpPort());
-							BufferedReader brTemp = new BufferedReader(new InputStreamReader(s1.getInputStream()));
-							BufferedWriter bwTemp = new BufferedWriter(new OutputStreamWriter(s1.getOutputStream()));
-							bwTemp.write("!getTimeStamp " + bid + " " + amount);
-							bwTemp.newLine();
-							bwTemp.flush();
-							String result1 = brTemp.readLine();
-							String[] result1Parts = result1.trim().split("\\s+");
-							Socket s2 = new Socket(user2.getHost(), user2.getTcpPort());
-							brTemp = new BufferedReader(new InputStreamReader(s2.getInputStream()));
-							bwTemp = new BufferedWriter(new OutputStreamWriter(s2.getOutputStream()));
-							bwTemp.write("!getTimeStamp " + bid + " " + amount);
-							bwTemp.newLine();
-							bwTemp.flush();
-							String result2 = brTemp.readLine();
-							String[] result2Parts = result2.trim().split("\\s+");
-							signedBids.add("!signedBid " + result1Parts[1] + " " + result1Parts[2] + " " + user1.getUsername() + ":" +
-									result1Parts[3] + ":" + result1Parts[4] + " " + user2.getUsername() + ":" + result2Parts[3] + ":" + result2Parts[4]);	
 						}
-					} else {
-						System.out.println("Only bidding allowed right now, and only when logged in!");
+					} catch (IOException e) {
+						System.err.println("I/O Error! Reading from Server!");
+						e.printStackTrace();
 					}
-				} else {
-					if (input.trim().startsWith("!login")) {
-						if (s.getIv() == null && s.getSecretKey() == null) {
-							input += " " + clientTCPPort;
-							answer = s.login(input);
-							tcpListener.setClientPrivKey(s.getClientPrivKey());
-							if (!signedBids.isEmpty()) {
-								for (String signedBid : signedBids) {
-									System.out.println(s.sendAndReceive(signedBid));
+				}
+
+				if(!blocked) {
+					if(b) {
+						System.out.println("not blocking");
+						b = false;
+					}
+
+					System.out.print(PROMPT);
+					input = keys.readLine();
+					if (serverDown) {
+						if (input.trim().startsWith("!bid") && activeUsers != null) {
+							if (activeUsers.size() < 2) {
+								System.err.println("Can't create signedBid, too few other clients!");
+							} else {
+								int random1 = 0;
+								int random2 = 0;
+								while (random1 == random2) {
+									random1 = new Random().nextInt(activeUsers.size());
+									random2 = new Random().nextInt(activeUsers.size());
 								}
-								signedBids.clear();
+								String[] commandParts = input.trim().split("\\s+");
+								String bid = commandParts[1];
+								double amount = Double.parseDouble(commandParts[2]);
+								User user1 = activeUsers.get(random1);
+								User user2 = activeUsers.get(random2);
+								System.out.println("User1: " + user1.getHost() + " - " + user1.getTcpPort());
+								System.out.println("User2: " + user2.getHost() + " - " + user2.getTcpPort());
+								Socket s1 = new Socket(user1.getHost(), user1.getTcpPort());
+								BufferedReader brTemp = new BufferedReader(new InputStreamReader(s1.getInputStream()));
+								BufferedWriter bwTemp = new BufferedWriter(new OutputStreamWriter(s1.getOutputStream()));
+								bwTemp.write("!getTimeStamp " + bid + " " + amount);
+								bwTemp.newLine();
+								bwTemp.flush();
+								String result1 = brTemp.readLine();
+								String[] result1Parts = result1.trim().split("\\s+");
+								Socket s2 = new Socket(user2.getHost(), user2.getTcpPort());
+								brTemp = new BufferedReader(new InputStreamReader(s2.getInputStream()));
+								bwTemp = new BufferedWriter(new OutputStreamWriter(s2.getOutputStream()));
+								bwTemp.write("!getTimeStamp " + bid + " " + amount);
+								bwTemp.newLine();
+								bwTemp.flush();
+								String result2 = brTemp.readLine();
+								String[] result2Parts = result2.trim().split("\\s+");
+								signedBids.add("!signedBid " + result1Parts[1] + " " + result1Parts[2] + " " + user1.getUsername() + ":" +
+										result1Parts[3] + ":" + result1Parts[4] + " " + user2.getUsername() + ":" + result2Parts[3] + ":" + result2Parts[4]);	
 							}
+						} else {
+							System.out.println("Only bidding allowed right now, and only when logged in!");
 						}
-						else {
-							answer = "Already logged in! Logout first!";
-						}
-					} else if (input.trim().startsWith("!end")) {
-						System.out.println("Shutting down...");
-						shutdown = true;
-						break;
-					} else if (input.trim().startsWith("!list")) {
-						s.sendLine(input);
-						String temp = "";
-						while (!(temp = s.readLine()).equals("ready")) {
-							answer += "\n" + temp;
-						}
-					} else if ((input.trim().startsWith("!getClientList"))) {
-						answer = getActiveClients();
-					} else if (input.trim().startsWith("!logout")) {
-						answer = s.sendAndReceive(input);
-						s.setIv(null);
-						s.setSecretKey(null);
 					} else {
-						answer = s.sendAndReceive(input);
+						if (input.trim().startsWith("!login")) {
+							if (s.getIv() == null && s.getSecretKey() == null) {
+								input += " " + clientTCPPort;
+								answer = s.login(input);
+								tcpListener.setClientPrivKey(s.getClientPrivKey());
+								if (!signedBids.isEmpty()) {
+									for (String signedBid : signedBids) {
+										System.out.println(s.sendAndReceive(signedBid));
+									}
+									signedBids.clear();
+								}								
+							}
+							else {
+								answer = "Already logged in! Logout first!";
+							}
+						} else if (input.trim().startsWith("!end")) {
+							System.out.println("Shutting down...");
+							shutdown = true;
+							break;
+						} else if (input.trim().startsWith("!list")) {
+							s.sendLine(input);
+							String temp = "";
+							boolean mismatch = false;
+							if(username.equals("")) {
+								while (!(temp = s.readLine()).equals("ready")) {
+									answer += "\n" + temp;
+								}
+							} else {
+								while (!(temp = s.readLine()).equals("ready")) {
+									if(!verify(temp)) {
+										mismatch = true;
+									}
+									System.out.println(verify(temp));
+									answer += "\n" + removeHash(temp);
+								}
+
+								if(mismatch) {
+									System.out.println("Verification failed!!! \n" + answer);
+									answer = "";
+									mismatch= false;
+									s.sendLine("!verify");
+									while (!(temp = s.readLine()).equals("ready")) {
+										if(!verify(temp)) {
+											mismatch = true;
+										}
+										System.out.println(verify(temp));
+										answer += "\n" + removeHash(temp);
+										//
+									}
+									if(mismatch) {
+										answer += "\n Verification failed again!!";
+									}
+								}
+
+							}
+						} else if ((input.trim().startsWith("!getClientList"))) {
+							answer = getActiveClients();
+
+						} else if (input.trim().startsWith("!logout")) {
+							answer = s.sendAndReceive(input);
+							s.setIv(null);
+							s.setSecretKey(null);
+						} else {
+							answer = s.sendAndReceive(input);
+						}
+						if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
+							System.out.println("logged in!");
+							username = input.trim().split("\\s+")[1];
+							PROMPT =  username + PROMPT;
+							tcpListener.setUsername(username);
+							getActiveClients();
+						}
+						if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
+							username = "";
+							PROMPT =  username + "> ";
+						}
+						if (input.trim().startsWith("!confirm") && answer.startsWith("You have to wait")) {
+							blocked = true;
+						}
+						System.out.println(answer);
+						answer = "";
 					}
-					if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
-						System.out.println("logged in!");
-						username = input.trim().split("\\s+")[1];
-						PROMPT =  username + PROMPT;
-						tcpListener.setUsername(username);
-						getActiveClients();
-					}
-					if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
-						username = "";
-						PROMPT =  username + "> ";
-					}
-					System.out.println(answer);
-					answer = "";
 				}
 			} catch (UnknownHostException e) {
 				System.err.println("Host not found!");
@@ -196,7 +274,7 @@ public class BiddingClient implements Runnable
 				//shutdown = true;
 			} catch (Exception e) {
 				System.err.println("Login failed");
-				System.err.println(e.getMessage());
+				System.err.println(e.getMessage());										
 			}
 		}
 		try {
@@ -259,6 +337,75 @@ public class BiddingClient implements Runnable
 			br = new BufferedReader(new InputStreamReader(s.getInputStream()));
 			bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
 		}
+	}
+
+	private boolean verify(String string) {
+		String[] parts = string.split(" ");
+		boolean verified = false;
+		try{			
+			byte[] keyBytes = new byte[1024];
+			String pathToSecretKey = clientsKeyDir+"\\"+ username + ".key";
+			FileInputStream fis = new FileInputStream(pathToSecretKey);
+			fis.read(keyBytes);
+			fis.close();
+			byte[] input = Hex.decode(keyBytes);
+
+			Key secretKey = new SecretKeySpec(input,"SHA512withRSA");
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(secretKey);
+
+			String message = removeHash(string);
+
+			// get the string as UTF-8 bytes
+			byte[] b = message.getBytes("UTF-8");
+
+			// create a digest from the byte array
+			byte[] digest = mac.doFinal(b);
+			byte[] encoded = Base64.encode(digest);
+			byte[] hash = parts[parts.length-1].getBytes("UTF-8");
+
+			//
+			String h = new String(hash);
+			String p = new String(encoded);
+			//System.out.println("h:"+h);
+			//System.out.println("p:"+p);
+			//
+			if(p.equals(h)) {
+				verified = true;
+			}
+
+			//
+		}catch (NoSuchAlgorithmException e) {
+			System.out.println("No Such Algorithm:" + e.getMessage());
+		}
+		catch (UnsupportedEncodingException e) {
+			System.out.println("Unsupported Encoding:" + e.getMessage());
+		}
+		catch (InvalidKeyException e) {
+			System.out.println("Invalid Key:" + e.getMessage());
+		} catch (IOException e) {
+			System.out.println("I/O Exception:" + e.getMessage());
+		}
+
+		//System.out.println(verified);
+
+		return verified;
+	}
+
+	//removes Hash
+	private String removeHash(String s) {
+		String[] parts = s.split(" ");
+		String message = "";
+
+		for(int i = 0; i<parts.length-1;i++) {
+			if(i == 0) {
+				message = message + parts[i];
+			} else {
+				message = message + " " + parts[i];
+			}
+		}
+		//
+		return message;
 	}
 
 	public static void main(String[] args) {
