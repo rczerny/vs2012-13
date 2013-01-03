@@ -43,4 +43,9 @@ public class GroupBid {
 		}
 	}
 	
+	public void unConfirm(String u){
+		if(groupUser.contains(u)) {
+			groupUser.remove(u);
+		}
+	}
 }

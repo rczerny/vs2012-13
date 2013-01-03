@@ -99,6 +99,7 @@ public class CommandHandler implements Runnable
 				if(timeout>30) {
 					try {
 						ssock.sendLine("!rejected");
+						main.getGroupBid(blockingGroupBid.getAuctionId(), blockingGroupBid.getAmount(), blockingGroupBid.getUser()).unConfirm(u.getUsername());
 						clientBlocked = false;
 						blockingGroupBid = null;
 					} catch (IOException e) {
