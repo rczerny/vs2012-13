@@ -47,6 +47,7 @@ public class CommandHandler implements Runnable
 	private boolean localShutdown = false;
 	private boolean clientBlocked = false;
 	private GroupBid blockingGroupBid = null;
+	private int timeout = 0;
 
 	//RMI Analytics Server
 	private AnalyticsServerRMI as = null;
@@ -94,9 +95,27 @@ public class CommandHandler implements Runnable
 						e.printStackTrace();
 					}
 				}
+				timeout++;
+				if(timeout>30) {
+					try {
+						ssock.sendLine("!rejected");
+						clientBlocked = false;
+						blockingGroupBid = null;
+					} catch (IOException e) {
+						System.err.println("I/O Error! Writing to Client!");
+						e.printStackTrace();
+					}
+				}else {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 
-			if(!clientBlocked) {
+			if(!clientBlocked) {				
 				try {
 					//sock.setSoTimeout(1000);
 					String command = "";
@@ -395,11 +414,10 @@ public class CommandHandler implements Runnable
 									ssock.sendLine("!confirmed");
 								} else {
 									clientBlocked = true;
+									timeout = 0;
 									blockingGroupBid = gb;
 									ssock.sendLine("You have to wait for another user to confirm the groupBid");
 								}
-								//
-								System.out.println(gb.isConfirmed());
 							}
 						} else {
 							ssock.sendLine("You have to login first!");

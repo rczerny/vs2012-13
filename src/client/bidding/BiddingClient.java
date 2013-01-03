@@ -44,6 +44,7 @@ public class BiddingClient implements Runnable
 	private String username = "";
 	private Socket sock;
 	private SuperSecureSocket s;
+	boolean b = false;
 
 	public BiddingClient() {
 
@@ -98,9 +99,22 @@ public class BiddingClient implements Runnable
 		while(!shutdown) {
 			if(blocked) {
 				try {
-					if(s.readLine().equals("!confirmed")) {
+					String a = s.readLine();
+					if(a.equals("!confirmed")) {
 						blocked = false;
 						System.out.println("!confirmed");
+					} else if(s.readLine().equals("!rejected")) {
+						blocked = false;
+						b = true;
+						System.out.println("!rejected " + blocked);
+						answer = "rejected";
+					} else {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				} catch (IOException e) {
 					System.err.println("I/O Error! Reading from Server!");
@@ -109,6 +123,12 @@ public class BiddingClient implements Runnable
 			}
 
 			if(!blocked) {
+				if(b) {
+					System.out.println("not blocking");
+					b = false;
+				}
+				
+				
 				try {
 					System.out.print(PROMPT);
 					input = keys.readLine();
