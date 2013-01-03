@@ -159,7 +159,7 @@ public class AuctionServer
 		}
 		return result;
 	}
-	
+
 	public GroupBid getGroupBid(int id, double amount, String bidder) {
 		GroupBid result = null;
 		for (GroupBid gb : groupBids) {
@@ -169,6 +169,36 @@ public class AuctionServer
 			}
 		}
 		return result;
+	}
+
+	public boolean checkGroupBid(GroupBid gb) {
+		boolean allowed = false;
+		Set<Integer> activeAuctions = new HashSet<Integer>();
+		int activeUser = 0;
+
+		for(Auction a: auctions) {
+			if(gb.getAuctionId() == a.getId()) {
+				activeAuctions.add(gb.getAuctionId());
+			}
+
+			for(GroupBid g:groupBids) {
+				if(g.getAuctionId() == a.getId()) {
+					activeAuctions.add(g.getAuctionId());
+				}
+			}			
+		}
+
+		for(User u: users) {
+			if(u.isLoggedIn()) {
+				activeUser++;
+			}
+		}
+
+		if(activeAuctions.size()<= activeUser) {
+			allowed = true;
+		}
+
+		return allowed;
 	}
 
 	public void sendNotification(User user, String message) {
@@ -195,7 +225,7 @@ public class AuctionServer
 		} else {
 			user.getDueNotifications().add(message);
 		}
-		*/
+		 */
 	}
 
 	/**

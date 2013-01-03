@@ -39,6 +39,7 @@ public class BiddingClient implements Runnable
 	private String clientsKeyDir = "";
 	private ExecutorService pool = null;
 	private boolean shutdown = false;
+	private boolean blocked = false;
 	private static String PROMPT = "> ";
 	private String username = "";
 	private Socket sock;
@@ -91,95 +92,115 @@ public class BiddingClient implements Runnable
 			System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 			//e.printStackTrace();
 			shutdown = true;
+			//
 		}
 
 		while(!shutdown) {
-			try {
-				System.out.print(PROMPT);
-				input = keys.readLine();
-				if (input.trim().startsWith("!login")) {
-					if (s.getIv() == null && s.getSecretKey() == null) {
-						input += " " + udpPort;
-						answer = s.login(input);
+			if(blocked) {
+				try {
+					if(s.readLine().equals("!confirmed")) {
+						blocked = false;
+						System.out.println("!confirmed");
 					}
-					else {
-						answer = "Already logged in! Logout first!";
-					}
-				} else if (input.trim().startsWith("!end")) {
-					System.out.println("Shutting down...");
-					shutdown = true;
-					break;
-				} else if (input.trim().startsWith("!list")) {
-					s.sendLine(input);
-					String temp = "";
-					boolean mismatch = false;
-					if(username.equals("")) {
-						while (!(temp = s.readLine()).equals("ready")) {
-							answer += "\n" + temp;
-						}
-					} else {
+				} catch (IOException e) {
+					System.err.println("I/O Error! Reading from Server!");
+					e.printStackTrace();
+				}
+			}
 
-						while (!(temp = s.readLine()).equals("ready")) {
-							if(!verify(temp)) {
-								mismatch = true;
+			if(!blocked) {
+				try {
+					System.out.print(PROMPT);
+					input = keys.readLine();
+					if (input.trim().startsWith("!login")) {
+						if (s.getIv() == null && s.getSecretKey() == null) {
+							input += " " + udpPort;
+							answer = s.login(input);
+						}
+						else {
+							answer = "Already logged in! Logout first!";
+						}
+					} else if (input.trim().startsWith("!end")) {
+						System.out.println("Shutting down...");
+						shutdown = true;
+						break;
+					} else if (input.trim().startsWith("!list")) {
+						s.sendLine(input);
+						String temp = "";
+						boolean mismatch = false;
+						if(username.equals("")) {
+							while (!(temp = s.readLine()).equals("ready")) {
+								answer += "\n" + temp;
 							}
-							System.out.println(verify(temp));
-							answer += "\n" + removeHash(temp);
-						}
-						//
+						} else {
 
-						if(mismatch) {
-							System.out.println("Verification failed!!! \n" + answer);
-							answer = "";
-							mismatch= false;
-							s.sendLine("!verify");
 							while (!(temp = s.readLine()).equals("ready")) {
 								if(!verify(temp)) {
 									mismatch = true;
 								}
+								//
 								System.out.println(verify(temp));
 								answer += "\n" + removeHash(temp);
 							}
+							//
+
 							if(mismatch) {
-								answer += "\n Verification failed again!!";
+								System.out.println("Verification failed!!! \n" + answer);
+								answer = "";
+								mismatch= false;
+								s.sendLine("!verify");
+								while (!(temp = s.readLine()).equals("ready")) {
+									if(!verify(temp)) {
+										mismatch = true;
+									}
+									System.out.println(verify(temp));
+									answer += "\n" + removeHash(temp);
+									//
+								}
+								if(mismatch) {
+									answer += "\n Verification failed again!!";
+								}
 							}
-						}
-						
-					}					
-				} else if (input.trim().startsWith("!logout")) {
-					answer = s.sendAndReceive(input);
-					s.setIv(null);
-					s.setSecretKey(null);
-				} else {
-					answer = s.sendAndReceive(input);
+
+						}					
+					} else if (input.trim().startsWith("!logout")) {
+						answer = s.sendAndReceive(input);
+						s.setIv(null);
+						s.setSecretKey(null);
+					} else {
+						answer = s.sendAndReceive(input);
+					}
+					if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
+						System.out.println("logged in!");
+						username = input.trim().split("\\s+")[1];
+						PROMPT =  username + PROMPT;
+						//udpListener.setUsername(username);
+					}
+					if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
+						username = "";
+						PROMPT =  username + "> ";
+					}
+					if (input.trim().startsWith("!confirm") && answer.startsWith("You have to wait")) {
+						blocked = true;
+					}
+					System.out.println(answer);
+					answer = "";
+				} catch (UnknownHostException e) {
+					System.err.println("Host not found!");
+				} catch(SocketTimeoutException e) {
+					System.out.println("BiddingClient SocketTimeout!");
+				} catch (IOException e) {
+					System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
+					e.printStackTrace();
+					shutdown = true;
+				} catch (NullPointerException e) {
+					System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
+					e.printStackTrace();
+					shutdown = true;
+				} catch (Exception e) {
+					System.err.println("Login failed");
+					System.err.println(e.getMessage());
 				}
-				if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
-					System.out.println("logged in!");
-					username = input.trim().split("\\s+")[1];
-					PROMPT =  username + PROMPT;
-					//udpListener.setUsername(username);
-				}
-				if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
-					username = "";
-					PROMPT =  username + "> ";
-				}
-				System.out.println(answer);
-				answer = "";
-			} catch (UnknownHostException e) {
-				System.err.println("Host not found!");
-			} catch(SocketTimeoutException e) {
-				System.out.println("BiddingClient SocketTimeout!");
-			} catch (IOException e) {
-				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-				e.printStackTrace();
-				shutdown = true;
-			} catch (NullPointerException e) {
-				System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-				e.printStackTrace();
-				shutdown = true;
-			} catch (Exception e) {
-				System.err.println("Login failed");
-				System.err.println(e.getMessage());
 			}
 		}
 		try {
@@ -215,7 +236,7 @@ public class BiddingClient implements Runnable
 			mac.init(secretKey);
 
 			String message = removeHash(string);
-			
+
 			// get the string as UTF-8 bytes
 			byte[] b = message.getBytes("UTF-8");
 
@@ -224,14 +245,17 @@ public class BiddingClient implements Runnable
 			byte[] encoded = Base64.encode(digest);
 			byte[] hash = parts[parts.length-1].getBytes("UTF-8");
 
+			//
 			String h = new String(hash);
 			String p = new String(encoded);
 			//System.out.println("h:"+h);
 			//System.out.println("p:"+p);
+			//
 			if(p.equals(h)) {
 				verified = true;
 			}
 
+			//
 		}catch (NoSuchAlgorithmException e) {
 			System.out.println("No Such Algorithm:" + e.getMessage());
 		}
@@ -248,12 +272,12 @@ public class BiddingClient implements Runnable
 
 		return verified;
 	}
-	
+
 	//removes Hash
 	private String removeHash(String s) {
 		String[] parts = s.split(" ");
 		String message = "";
-		
+
 		for(int i = 0; i<parts.length-1;i++) {
 			if(i == 0) {
 				message = message + parts[i];
