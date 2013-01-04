@@ -32,6 +32,7 @@ public class AuctionServer
 	private Cron tt = null;
 	private PrivateKey serverPrivKey = null;
 	private String clientsKeyDir = "";
+	private boolean stopped = false;
 
 	public AuctionServer(int port, String serverPrivKey, String clientsKeyDir) {
 		this.port = port;
@@ -79,16 +80,21 @@ public class AuctionServer
 	}
 
 	public void runServer(String billingBindingName) {
-		//pool.execute(new ConsoleListener(this));
+		pool.execute(new ConsoleListener(this));
 		tt = new Cron(this, billingBindingName);
 		pool.execute(tt);
 		while (!shutdown) {
 			try {
 				pool.execute(new CommandHandler(ssock.accept(), this));
+				while (stopped) {
+					Thread.sleep(1000);
+				}
 			} catch (SocketTimeoutException e) {
 				;
 			} catch (IOException e) {
 				System.err.println("Error starting or shutting down the server!");
+				e.printStackTrace();
+			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
@@ -158,6 +164,24 @@ public class AuctionServer
 			}
 		}
 		return result;
+	}
+
+	public void setStopped(boolean stopped) {
+		this.stopped = stopped;
+		try {
+			Thread.sleep(1000);
+			if (stopped == false) {
+				ssock = new ServerSocket(this.port);
+				ssock.setSoTimeout(500);
+			} else {
+				ssock.close();
+			}	
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Error setting stop-state of server!");
+			e.printStackTrace();
+		}
 	}
 
 	public GroupBid getGroupBid(int id, double amount, String bidder) {

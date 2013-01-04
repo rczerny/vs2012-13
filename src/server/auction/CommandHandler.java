@@ -19,6 +19,8 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 
@@ -205,6 +207,7 @@ public class CommandHandler implements Runnable
 														}
 														System.out.println("Successfully logged in as " + u.getUsername());
 														ssock.sendLine(new String("Successfully logged in as " + u.getUsername()));
+														System.out.println("u is: " + u);
 														/*bw.write("ready");
 										bw.newLine();
 										bw.flush();*/
@@ -427,7 +430,7 @@ public class CommandHandler implements Runnable
 						////////////////////////////////////////////
 						// !verify - Client requests list again
 						////////////////////////////////////////////
-					}else if(commandParts[0].equals("!verify")) {
+					} else if(commandParts[0].equals("!verify")) {
 						verifyListAuctions();
 					} else if(commandParts[0].equals("!end")) {
 						localShutdown = true;
@@ -446,6 +449,83 @@ public class CommandHandler implements Runnable
 							u.setLoggedIn(false);
 							//u.setSocket(null);
 							u.setUdpPort(0);
+						}
+						////////////////////////////////////////////
+						// !end - Client requests connection closing
+						////////////////////////////////////////////
+					} else if(commandParts[0].equals("!end")) {
+						localShutdown = true;
+						if (u != null && u.isLoggedIn()) {
+							/*try{
+							UserEvent ue = new UserEvent();
+							ue.setType("USER_LOGOUT");
+							ue.setUsername(u.getUsername());
+							ue.setTimestamp(System.currentTimeMillis());
+							as.processEvent(ue);
+						} catch (RemoteException e) {
+							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
+							//e.printStackTrace();
+						}*/
+							u.setLoggedIn(false);
+						}
+					} else if(commandParts[0].equals("!getClientList")) {
+						String result = null;
+						if (u != null && u.isLoggedIn()) {
+							for (User u: main.users) {
+								if (u.isLoggedIn()) {
+									result = u.getSocket().getInetAddress().getHostAddress() + ":" + u.getUdpPort() + ":" + u.getUsername();
+									ssock.sendLine(result);
+								}
+							}
+							if (result == null)
+								ssock.sendLine("No active clients available at the moment!");
+							ssock.sendLine("ready");
+						} else {
+							System.out.println("u is null: " + u);
+							ssock.sendLine("You have to login first!");
+							ssock.sendLine("ready");
+						}
+					} else if(commandParts[0].equals("!signedBid")) {
+						if (u != null && u.isLoggedIn()) {
+							int id = Integer.parseInt(commandParts[1]);
+							double amount = Double.parseDouble(commandParts[2]);
+							String user1 = commandParts[3].split(":")[0];
+							String timestamp1 = commandParts[3].split(":")[1];
+							String signature1 = commandParts[3].split(":")[2];
+							String user2 = commandParts[4].split(":")[0];
+							String timestamp2 = commandParts[4].split(":")[1];
+							String signature2 = commandParts[4].split(":")[2];
+							Auction a = main.getAuction(id);
+							Signature sig = Signature.getInstance("SHA512withRSA");
+							sig.initVerify(ssock.getPEMPublicKey(main.getClientsKeyDir() + user1 + ".pub.pem"));
+							sig.update(new String("!timestamp " + id + " " + amount + " " + timestamp1).getBytes());
+							Signature sig2 = Signature.getInstance("SHA512withRSA");
+							sig2.initVerify(ssock.getPEMPublicKey(main.getClientsKeyDir() + user2 + ".pub.pem"));
+							sig2.update(new String("!timestamp " + id + " " + amount + " " + timestamp2).getBytes());
+							boolean verify1, verify2;
+							verify1 = sig.verify(Base64.decode(signature1));
+							verify2 = sig2.verify(Base64.decode(signature2));
+							System.out.println("Strings to verify: \n" + new String("!timestamp " + id + " " + amount + " " + timestamp1 + "\n" + "!timestamp " + id + " " + amount + " " + timestamp2));
+							System.out.println("Verify1: " + verify1 + "\nVerify2: " + verify2);
+							if (verify1 && verify2) {
+								if (a == null) {
+									ssock.sendLine("Error! Auction not found!");
+								} else {
+									if (amount > a.getHighestBid()) {
+										a.setHighestBid(amount);
+										a.setHighestBidder(u);
+										ssock.sendLine("You successfully bid with " + amount + " on '" + a.getDescription() + "'.");
+									} else {
+										ssock.sendLine("You unsuccessfully bid with " + amount + " on '" + a.getDescription() + "'. Current highest bid is " + (a.getHighestBid()));
+									}
+								}
+							} else {
+								ssock.sendLine("Couldn't make signed bid! Signatures don't match!");
+								System.out.println(command);
+							}
+						} else {
+							ssock.sendLine("You have to login first!");
+							ssock.sendLine("ready");
 						}
 					} else {
 						ssock.sendLine("Unknown command!");
@@ -469,23 +549,31 @@ public class CommandHandler implements Runnable
 					System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 					//e1.printStackTrace();
 				}*/
-					System.err.println("Error while communicating with the client!");
-					e.printStackTrace();
-					u.setLoggedIn(false);
+					//System.err.println("Error while communicating with the client!");
+					//e.printStackTrace();
+					if (u != null)
+						u.setLoggedIn(false);
 					ssock.setIv(null);
 					ssock.setSecretKey(null);
 					break;
+				} catch (NoSuchAlgorithmException e) {
+					System.err.println("Error: No such algorithm!");
+				} catch (InvalidKeyException e) {
+					System.err.println("Error: Invalid key!");
+				} catch (SignatureException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
-		}
-		///////////////////////////
-		// SHUTDOWN THIS CONNECTION
-		///////////////////////////
-		try {
-			sock.close();
-		} catch (IOException e) {
-			System.err.println("Error closing the connection!");
-			e.printStackTrace();
+			///////////////////////////
+			// SHUTDOWN THIS CONNECTION
+			///////////////////////////
+			try {
+				sock.close();
+			} catch (IOException e) {
+				System.err.println("Error closing the connection!");
+				e.printStackTrace();
+			}
 		}
 	}
 
