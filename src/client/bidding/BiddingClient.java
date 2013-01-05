@@ -174,6 +174,13 @@ public class BiddingClient implements Runnable
 							if (s.getIv() == null && s.getSecretKey() == null) {
 								input += " " + clientTCPPort;
 								answer = s.login(input);
+								tcpListener.setClientPrivKey(s.getClientPrivKey());
+								if (!signedBids.isEmpty()) {
+									for (String signedBid : signedBids) {
+										System.out.println(s.sendAndReceive(signedBid));
+									}
+									signedBids.clear();
+								}
 							}
 							else {
 								answer = "Already logged in! Logout first!";
@@ -267,6 +274,7 @@ public class BiddingClient implements Runnable
 				} catch (Exception e) {
 					System.err.println("Login failed");
 					System.err.println(e.getMessage());
+					e.printStackTrace();
 				}
 			}
 		}

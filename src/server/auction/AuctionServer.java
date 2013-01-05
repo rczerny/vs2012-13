@@ -88,15 +88,16 @@ public class AuctionServer
 		pool.execute(tt);
 		while (!shutdown) {
 			try {
-				pool.execute(new CommandHandler(ssock.accept(), this));
 				while (stopped) {
 					Thread.sleep(1000);
 				}
+				if (!stopped)
+					pool.execute(new CommandHandler(ssock.accept(), this));
 			} catch (SocketTimeoutException e) {
 				;
 			} catch (IOException e) {
-				System.err.println("Error starting or shutting down the server!");
-				e.printStackTrace();
+				System.err.println("Server offline!");
+				//e.printStackTrace();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -168,7 +169,7 @@ public class AuctionServer
 		}
 		return result;
 	}
-	
+
 	public void setStopped(boolean stopped) {
 		this.stopped = stopped;
 		try {
