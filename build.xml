@@ -14,7 +14,7 @@
     <property name="billing.name" value="server.billing.BillingServer"/><!-- Billing Server's full class name (including the package) -->
     <property name="analytics.bindingName" value="RemoteAnalyticsServer"/><!-- RMI Binding Name of the Analytics Server -->
     <property name="billing.bindingName" value="RemoteBillingServer"/><!-- RMI Binding Name of the Billing Server -->
-    <property name="server.port" value="12122"/><!-- TCP port -->
+    <property name="server.port" value="12120"/><!-- TCP port -->
     <!-- new properties for assignment 3 -->
     <property name="server.key" value="keys/auction-server.pem"/><!-- Private key file of Auction Server -->
     <property name="server.key.pub" value="keys/auction-server.pub.pem"/><!-- Public key file of Auction Server -->
