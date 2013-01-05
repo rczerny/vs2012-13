@@ -64,12 +64,6 @@ public class TCPListener implements Runnable {
 					bw.write(answer);
 					bw.newLine();
 					bw.flush();
-				} else if (input.trim().startsWith("!end")) {
-
-				} else if (input.trim().startsWith("!list")) {
-
-				} else {
-
 				}
 			} catch (UnknownHostException e) {
 				System.err.println("Host not found!");

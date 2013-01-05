@@ -96,7 +96,6 @@ public class BiddingClient implements Runnable
 			System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
 			//e.printStackTrace();
 			shutdown = true;
-			//
 		}
 
 		while(!shutdown) {
@@ -123,7 +122,6 @@ public class BiddingClient implements Runnable
 					e.printStackTrace();
 				}
 			}
-
 			if(!blocked) {
 
 				try {
@@ -203,12 +201,9 @@ public class BiddingClient implements Runnable
 									if(!verify(temp)) {
 										mismatch = true;
 									}
-									//
 									System.out.println(verify(temp));
 									answer += "\n" + removeHash(temp);
 								}
-								//
-
 								if(mismatch) {
 									System.out.println("Verification failed!!! \n" + answer);
 									answer = "";
@@ -220,7 +215,6 @@ public class BiddingClient implements Runnable
 										}
 										System.out.println(verify(temp));
 										answer += "\n" + removeHash(temp);
-										//
 									}
 									if(mismatch) {
 										answer += "\n Verification failed again!!";
@@ -244,11 +238,10 @@ public class BiddingClient implements Runnable
 							answer = s.sendAndReceive(input);
 						}
 						if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
-							System.out.println("logged in!");
 							username = input.trim().split("\\s+")[1];
 							PROMPT =  username + PROMPT;
 							tcpListener.setUsername(username);
-							getActiveClients();
+							System.out.println(getActiveClients());
 						}
 						if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
 							username = "";
@@ -354,7 +347,6 @@ public class BiddingClient implements Runnable
 		return verified;
 	}
 
-	//removes Hash
 	private String removeHash(String s) {
 		String[] parts = s.split(" ");
 		String message = "";
@@ -385,7 +377,8 @@ public class BiddingClient implements Runnable
 				activeUsers.add(tempUser);
 			}
 		}
-		System.out.println("Active Users:");
+		if (!result.equals(""))
+			System.out.println("Active Users:");
 		return result;
 	}
 

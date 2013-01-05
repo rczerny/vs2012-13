@@ -63,9 +63,6 @@ public class SuperSecureSocket
 		String username = commandParts[1];
 		byte[] clientChallenge = generateSecureRandomNumber(32);
 		byte[] base64Challenge = Base64.encode(clientChallenge);
-		System.out.println(base64Challenge.length);
-		System.out.println(new String(base64Challenge));
-		System.out.println(clientChallenge);
 		message1 += " " + new String(Base64.encode(encrypt(base64Challenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", serverPubPrivKey)));
 		String message2S = sendAndReceive(message1);
 		byte[] message2 = message2S.getBytes();
@@ -73,7 +70,6 @@ public class SuperSecureSocket
 			throw new Exception("Error while sending 1st message!");
 		message2S = message2S.trim();
 		String[] commandParts2 = message2S.split("\\s+");
-		System.out.println("message2 received: " + message2S);
 		PrivateKey pK = getPEMPrivateKey(clientsKeyDir + username + ".pem");
 		if (pK == null) {
 			sendLine("ERROR");
@@ -89,15 +85,9 @@ public class SuperSecureSocket
 		SecretKey secretKey = new SecretKeySpec(Base64.decode(commandParts2[3]), "AES");
 		this.secretKey = secretKey;
 		IvParameterSpec iv = new IvParameterSpec(Base64.decode(commandParts2[4]));
-		System.out.println("iv-length: " + Base64.decode(commandParts2[4]).length);
-		System.out.println("aes-key-length: " + Base64.decode(commandParts2[3]).length);
-		System.out.println("server-challenge-length: " + Base64.decode(commandParts2[2]).length);
-		System.out.println("client-challenge-length: " + Base64.decode(commandParts2[1]).length);
 		this.iv = iv;
 		if (commandParts2[0].equals("!ok")) {
-			System.out.println("Got !ok message!");
 			if (new String(Base64.decode(commandParts2[1].getBytes())).equals(new String(clientChallenge))) {
-				System.out.println("Client Challenges match!");
 				result = new String(sendAndReceive(new String(serverChallenge)));
 				if (result == null || result.equals(""))
 					throw new Exception("Error while sending 3rd message!");
@@ -127,13 +117,11 @@ public class SuperSecureSocket
 				answerB = Base64.decode(decrypt(answerB, "AES/CTR/NoPadding", secretKey, iv));
 			}
 			result += new String(answerB);
-			System.out.println("Result added!");
 			//}
 		} catch (IOException e) {
 			System.err.println("Error while communicating with the server!");
 			e.printStackTrace();
 		}
-		System.out.println("Result returned: " + result);
 		return result;
 	}
 
@@ -148,12 +136,10 @@ public class SuperSecureSocket
 		if (secretKey != null && iv != null) {
 			answerB = Base64.decode(decrypt(answerB, "AES/CTR/NoPadding", secretKey, iv));
 		}
-		System.out.println("readLine(): " + new String(answerB));
 		return new String(answerB);
 	}
 
 	public void sendLine(String message) throws IOException {
-		System.out.println("sendLine(): " + new String(message));
 		byte[] messageB = Base64.encode(message.getBytes());
 		if (secretKey != null && iv != null) {
 			messageB = Base64.encode(encrypt(messageB, "AES/CTR/NoPadding", secretKey, iv));

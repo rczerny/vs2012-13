@@ -32,9 +32,9 @@ import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
 import server.analytics.AnalyticsServerRMI;
-import server.analytics.AuctionEvent;
-import server.analytics.BidEvent;
-import server.analytics.UserEvent;
+//import server.analytics.AuctionEvent;
+//import server.analytics.BidEvent;
+//import server.analytics.UserEvent;
 import tools.PropertiesParser;
 import tools.SuperSecureSocket;
 
@@ -138,7 +138,6 @@ public class CommandHandler implements Runnable
 					//sock.setSoTimeout(1000);
 					String command = "";
 					command = ssock.readLine();
-					System.out.println("Got " + command);
 					if (command == null)
 						command = "!end";
 					command = command.trim(); // remove leading and trailing whitespaces
@@ -157,14 +156,11 @@ public class CommandHandler implements Runnable
 					}
 					else if(commandParts[0].equals("!login")) {
 						byte[] clientChallenge = Base64.decode(commandParts[3]);
-						System.out.println(command);
-						System.out.println(commandParts[3]);
 						PrivateKey privK = main.getServerPrivKey();
 						if (privK != null) {
 							byte[] clientChallengeB64 = ssock.decrypt(clientChallenge, "RSA/NONE/OAEPWithSHA256AndMGF1Padding", privK);
 							final String B64 = "a-zA-Z0-9/+";
 							String message1 = new String(commandParts[0]+" "+commandParts[1]+" "+commandParts[2]+" "+ new String(clientChallengeB64));
-							System.out.println(message1);
 							assert message1.matches("!login [a-zA-Z0-9_\\-]+ [0-9]+ ["+B64+"]{43}=") : "1st message";
 							clientChallenge = Base64.decode(clientChallengeB64);
 							if (commandParts.length != 4) {
@@ -183,7 +179,6 @@ public class CommandHandler implements Runnable
 											u = null;
 											ssock.sendLine(username + " is already logged in at another session! Logout first!");
 										} else {
-											System.out.println("Key generation!");
 											byte[] secretKey = ssock.generateSecureRandomNumber(32);
 											byte[] serverChallenge = ssock.generateSecureRandomNumber(32);
 											byte[] iv = ssock.generateSecureRandomNumber(16);
@@ -193,18 +188,13 @@ public class CommandHandler implements Runnable
 											if (pubK != null) {
 												byte[] message2B = ssock.encrypt(message2.getBytes(), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", pubK); 
 												message2 = "!ok " + new String(Base64.encode(message2B));
-												System.out.println("iv-length: " +iv.length);
-												System.out.println("Just before sending message 2");
 												ssock.sendLine(message2);
-												System.out.println("Just after sending message 2");
 												ssock.setSecretKey(new SecretKeySpec(secretKey, "AES"));
 												ssock.setIv(new IvParameterSpec(iv));
 												String message3 = ssock.readLine();
 												if (!message3.equals("")) {
-													System.out.println("message3: " + message3);
 													assert new String(Base64.encode(message3.getBytes())).matches("["+B64+"]{43}=") : "3rd message";
 													if (message3.equals(new String(serverChallenge))) {
-														System.out.println("serverChallenges match!");
 														if (u == null) { // new user?
 															u = new User(sock);
 															u.setUsername(username);
@@ -215,23 +205,11 @@ public class CommandHandler implements Runnable
 															u.setUdpPort(udpPort);
 															u.setLoggedIn(true);
 															u.setSocket(sock);
-															/*********************
-															 * no UDP in Lab 2
-															 *********************
-										if (u.getDueNotifications() != null && u.getDueNotifications().size() > 0) { // any notifications due?
-											for (String message : u.getDueNotifications()) {
-												main.sendNotification(u, message);
-												u.getDueNotifications().remove(message);
-											}
-										}
-															 */
 														}
-														System.out.println("Successfully logged in as " + u.getUsername());
 														ssock.sendLine(new String("Successfully logged in as " + u.getUsername()));
 														/*bw.write("ready");
 										bw.newLine();
 										bw.flush();*/
-														System.out.println("Ready to roll!");
 														/*try{
 											UserEvent ue = new UserEvent();
 											ue.setType("USER_LOGIN");
@@ -392,10 +370,7 @@ public class CommandHandler implements Runnable
 							ssock.sendLine("Invalid command! Should be !groupBid <auction-id> <amount>");
 						} else if (u != null && u.isLoggedIn()) {
 							int id = Integer.parseInt(commandParts[1]);
-							double amount = Double.parseDouble(commandParts[2]);
-							//DecimalFormat f = new DecimalFormat("#0.00");
-							//String amount_string = f.format(amount);
-							//amount = Double.parseDouble(amount_string); 
+							double amount = Double.parseDouble(commandParts[2]); 
 							Auction a = main.getAuction(id);
 							if (a == null) {
 								ssock.sendLine("Error! Auction not found!");
@@ -489,7 +464,6 @@ public class CommandHandler implements Runnable
 								ssock.sendLine("No active clients available at the moment!");
 							ssock.sendLine("ready");
 						} else {
-							System.out.println("u is null: " + u);
 							ssock.sendLine("You have to login first!");
 							ssock.sendLine("ready");
 						}
@@ -513,8 +487,6 @@ public class CommandHandler implements Runnable
 							boolean verify1, verify2;
 							verify1 = sig.verify(Base64.decode(signature1));
 							verify2 = sig2.verify(Base64.decode(signature2));
-							System.out.println("Strings to verify: \n" + new String("!timestamp " + id + " " + amount + " " + timestamp1 + "\n" + "!timestamp " + id + " " + amount + " " + timestamp2));
-							System.out.println("Verify1: " + verify1 + "\nVerify2: " + verify2);
 							if (verify1 && verify2) {
 								if (a == null) {
 									ssock.sendLine("Error! Auction not found!");
@@ -529,7 +501,6 @@ public class CommandHandler implements Runnable
 								}
 							} else {
 								ssock.sendLine("Couldn't make signed bid! Signatures don't match!");
-								System.out.println(command);
 							}
 						} else {
 							ssock.sendLine("You have to login first!");
@@ -569,7 +540,6 @@ public class CommandHandler implements Runnable
 				} catch (InvalidKeyException e) {
 					System.err.println("Error: Invalid key!");
 				} catch (SignatureException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -586,7 +556,6 @@ public class CommandHandler implements Runnable
 	}
 
 	public void listGroupBids() {
-		System.out.println("listGroupBids()");
 		try {
 			if (main.groupBids.size() > 0) {
 				for (GroupBid g : main.groupBids) {
@@ -603,19 +572,14 @@ public class CommandHandler implements Runnable
 			e.printStackTrace();
 		} catch (ConcurrentModificationException e) {
 			;
-
-			//
 		}
 	}
 
 	public void listAuctions() {
-		System.out.println("listAuctions()");
 		try {
 			if (main.auctions.size() > 0) {
 				// wenn eingeloggt signieren sonst normal versenden
-				//
 				if(u.isLoggedIn()) {
-					//blub
 					String message = "";
 					for (Auction a : main.auctions) {
 						message += "\n" + a.toString();
@@ -628,7 +592,7 @@ public class CommandHandler implements Runnable
 				}
 				ssock.sendLine("ready");
 			} else {
-				if(u.isLoggedIn()) {
+				if(u != null && u.isLoggedIn()) {
 					ssock.sendLine(sign("No auctions available at the moment!"));
 				} else {
 					ssock.sendLine("No auctions available at the moment!");
@@ -640,13 +604,10 @@ public class CommandHandler implements Runnable
 			e.printStackTrace();
 		} catch (ConcurrentModificationException e) {
 			;
-
-			//
 		}
 	}
 
 	public void verifyListAuctions() {
-		System.out.println("verifyListAuctions()");
 		try {
 			if (main.auctions.size() > 0) {
 				if(u.isLoggedIn()) {
@@ -665,7 +626,6 @@ public class CommandHandler implements Runnable
 		} catch (ConcurrentModificationException e) {
 			;
 		}
-		//
 	}
 
 	private String sign(String s) {
@@ -675,12 +635,8 @@ public class CommandHandler implements Runnable
 			String pathToSecretKey = main.getClientsKeyDir() + u.getUsername() + ".key";
 			FileInputStream fis = new FileInputStream(pathToSecretKey);
 			fis.read(keyBytes);
-			//
 			fis.close();
-			//
 			byte[] input = Hex.decode(keyBytes);
-
-			//
 			Key secretKey = new SecretKeySpec(input,"SHA512withRSA");
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(secretKey);
@@ -692,23 +648,15 @@ public class CommandHandler implements Runnable
 
 			String hash = new String(encoded);
 			result = s + " " + hash;
-
-			//
-		}catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException e) {
 			System.out.println("No Such Algorithm:" + e.getMessage());
-		}
-		catch (UnsupportedEncodingException e) {
+		} catch (UnsupportedEncodingException e) {
 			System.out.println("Unsupported Encoding:" + e.getMessage());
-		}
-		catch (InvalidKeyException e) {
+		} catch (InvalidKeyException e) {
 			System.out.println("Invalid Key:" + e.getMessage());
-		} 
-		catch (IOException e) {
+		} catch (IOException e) {
 			System.out.println("I/O Exception:" + e.getMessage());
 		}
-
-		//
-
 		return result;
 	}
 }
