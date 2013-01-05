@@ -146,9 +146,16 @@ public class CommandHandler implements Runnable
 					if (commandParts[0].equals("!list")) {
 						listAuctions();
 						////////////////////////////////////////////
+						// !listGroupBids
+						////////////////////////////////////////////
+					} else if (commandParts[0].equals("!getGbList")) {
+						listGroupBids();
+						System.out.println(main.waitingBids);
+						////////////////////////////////////////////
 						// !login - Client logs in
 						////////////////////////////////////////////
-					} else if(commandParts[0].equals("!login")) {
+					}
+					else if(commandParts[0].equals("!login")) {
 						byte[] clientChallenge = Base64.decode(commandParts[3]);
 						System.out.println(command);
 						System.out.println(commandParts[3]);
@@ -435,6 +442,7 @@ public class CommandHandler implements Runnable
 										a.setHighestBidder(main.getUser(gb.getUser()));
 									}
 									ssock.sendLine("!confirmed");
+									main.groupBids.remove(gb);
 								} else {
 									clientBlocked = true;
 									timeout = 0;
@@ -574,6 +582,29 @@ public class CommandHandler implements Runnable
 		} catch (IOException e) {
 			System.err.println("Error closing the connection!");
 			e.printStackTrace();
+		}
+	}
+
+	public void listGroupBids() {
+		System.out.println("listGroupBids()");
+		try {
+			if (main.groupBids.size() > 0) {
+				for (GroupBid g : main.groupBids) {
+					ssock.sendLine(g.toString());
+				}
+				ssock.sendLine("ready");
+			} else {
+				ssock.sendLine("No groupBids available at the moment!");
+
+				ssock.sendLine("ready");
+			}
+		} catch (IOException e) {
+			System.err.println("Error while returning a groupBid list!");
+			e.printStackTrace();
+		} catch (ConcurrentModificationException e) {
+			;
+
+			//
 		}
 	}
 
