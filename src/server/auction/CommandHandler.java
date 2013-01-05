@@ -563,7 +563,7 @@ public class CommandHandler implements Runnable
 		String result = "";
 		try{			
 			byte[] keyBytes = new byte[1024];
-			String pathToSecretKey = main.getClientsKeyDir()+"\\"+ u.getUsername() + ".key";
+			String pathToSecretKey = main.getClientsKeyDir() + u.getUsername() + ".key";
 			FileInputStream fis = new FileInputStream(pathToSecretKey);
 			fis.read(keyBytes);
 			//

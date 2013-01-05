@@ -239,7 +239,7 @@ public class BiddingClient implements Runnable
 		boolean verified = false;
 		try{			
 			byte[] keyBytes = new byte[1024];
-			String pathToSecretKey = clientsKeyDir+"\\"+ username + ".key";
+			String pathToSecretKey = clientsKeyDir + username + ".key";
 			FileInputStream fis = new FileInputStream(pathToSecretKey);
 			fis.read(keyBytes);
 			fis.close();
