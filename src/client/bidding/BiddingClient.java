@@ -1,13 +1,5 @@
 package client.bidding;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -16,10 +8,18 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -34,47 +34,45 @@ public class BiddingClient implements Runnable
 {	
 	private String host = "";
 	private int tcpPort = 0;
-	private int clientTCPPort = 0;
+	private int udpPort = 0;
 	private String serverPubKey = "";
 	private String clientsKeyDir = "";
 	private ExecutorService pool = null;
 	private boolean shutdown = false;
-	private boolean serverDown = false;
 	private boolean blocked = false;
 	private static String PROMPT = "> ";
 	private String username = "";
-	private ArrayList<User> activeUsers;
 	private Socket sock;
 	private SuperSecureSocket s;
-	private ArrayList<String> signedBids = new ArrayList<String>();
-	private BufferedReader br = null;
-	private BufferedWriter bw = null;
-	boolean b = false;
 
 	public BiddingClient() {
 
 	}
 
-	public BiddingClient(String host, int tcpPort, int clientTCPPort, String serverPubKey, String clientsKeyDir) {
+	public BiddingClient(String host, int tcpPort, int udpPort, String serverPubKey, String clientsKeyDir) {
 		this.host = host;
 		this.tcpPort = tcpPort;
-		this.clientTCPPort = clientTCPPort;
+		this.udpPort = udpPort;
 		this.serverPubKey = serverPubKey;
 		this.clientsKeyDir = clientsKeyDir;
-		pool = Executors.newCachedThreadPool();
+		pool = Executors.newSingleThreadExecutor();
 	}
 
 	public void run() {
-		TCPListener tcpListener = null; 
+		/**********************
+		 * No UDP in Lab 2
+		 **********************
+		UDPListener udpListener = null; 
 		try {
-			tcpListener = new TCPListener(clientTCPPort, username);
+			udpListener = new UDPListener(udpPort, username);
 		} catch (SocketException e) {
 			System.err.println("Error opening the datagram socket! Port is probably already used!");
 			return;
 		}
-		pool.execute(tcpListener);
-		ServerChecker sc = new ServerChecker(this, host, tcpPort);
-		pool.execute(sc);
+		pool.execute(udpListener);
+		 */
+		BufferedReader br = null;
+		BufferedWriter bw = null;
 		BufferedReader keys = null;
 		String input = null;
 		String answer = null;
@@ -98,183 +96,125 @@ public class BiddingClient implements Runnable
 		}
 
 		while(!shutdown) {
-			try {
-				if(blocked) {
-					try {
-						String a = s.readLine();
-						if(a.equals("!confirmed")) {
-							blocked = false;
-							System.out.println("!confirmed");
-						} else if(s.readLine().equals("!rejected")) {
-							blocked = false;
-							b = true;
-							System.out.println("!rejected " + blocked);
-							answer = "rejected";
-						} else {
-							try {
-								Thread.sleep(1000);
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+			if(blocked) {
+				try {
+					String a = s.readLine();
+					if(a.equals("!confirmed")) {
+						blocked = false;
+						System.out.println("!confirmed");
+					} else if(a.equals("!rejected")) {
+						blocked = false;
+						System.out.println("!rejected " + blocked);
+						answer = "rejected";
+					} else {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
-					} catch (IOException e) {
-						System.err.println("I/O Error! Reading from Server!");
-						e.printStackTrace();
 					}
+				} catch (IOException e) {
+					System.err.println("I/O Error! Reading from Server!");
+					e.printStackTrace();
 				}
+			}
 
-				if(!blocked) {
-					if(b) {
-						System.out.println("not blocking");
-						b = false;
-					}
-
+			if(!blocked) {
+					
+				try {
 					System.out.print(PROMPT);
 					input = keys.readLine();
-					if (serverDown) {
-						if (input.trim().startsWith("!bid") && activeUsers != null) {
-							if (activeUsers.size() < 2) {
-								System.err.println("Can't create signedBid, too few other clients!");
-							} else {
-								int random1 = 0;
-								int random2 = 0;
-								while (random1 == random2) {
-									random1 = new Random().nextInt(activeUsers.size());
-									random2 = new Random().nextInt(activeUsers.size());
-								}
-								String[] commandParts = input.trim().split("\\s+");
-								String bid = commandParts[1];
-								double amount = Double.parseDouble(commandParts[2]);
-								User user1 = activeUsers.get(random1);
-								User user2 = activeUsers.get(random2);
-								System.out.println("User1: " + user1.getHost() + " - " + user1.getTcpPort());
-								System.out.println("User2: " + user2.getHost() + " - " + user2.getTcpPort());
-								Socket s1 = new Socket(user1.getHost(), user1.getTcpPort());
-								BufferedReader brTemp = new BufferedReader(new InputStreamReader(s1.getInputStream()));
-								BufferedWriter bwTemp = new BufferedWriter(new OutputStreamWriter(s1.getOutputStream()));
-								bwTemp.write("!getTimeStamp " + bid + " " + amount);
-								bwTemp.newLine();
-								bwTemp.flush();
-								String result1 = brTemp.readLine();
-								String[] result1Parts = result1.trim().split("\\s+");
-								Socket s2 = new Socket(user2.getHost(), user2.getTcpPort());
-								brTemp = new BufferedReader(new InputStreamReader(s2.getInputStream()));
-								bwTemp = new BufferedWriter(new OutputStreamWriter(s2.getOutputStream()));
-								bwTemp.write("!getTimeStamp " + bid + " " + amount);
-								bwTemp.newLine();
-								bwTemp.flush();
-								String result2 = brTemp.readLine();
-								String[] result2Parts = result2.trim().split("\\s+");
-								signedBids.add("!signedBid " + result1Parts[1] + " " + result1Parts[2] + " " + user1.getUsername() + ":" +
-										result1Parts[3] + ":" + result1Parts[4] + " " + user2.getUsername() + ":" + result2Parts[3] + ":" + result2Parts[4]);	
+					if (input.trim().startsWith("!login")) {
+						if (s.getIv() == null && s.getSecretKey() == null) {
+							input += " " + udpPort;
+							answer = s.login(input);
+						}
+						else {
+							answer = "Already logged in! Logout first!";
+						}
+					} else if (input.trim().startsWith("!end")) {
+						System.out.println("Shutting down...");
+						shutdown = true;
+						break;
+					} else if (input.trim().startsWith("!list")) {
+						s.sendLine(input);
+						String temp = "";
+						boolean mismatch = false;
+						if(username.equals("")) {
+							while (!(temp = s.readLine()).equals("ready")) {
+								answer += "\n" + temp;
 							}
 						} else {
-							System.out.println("Only bidding allowed right now, and only when logged in!");
-						}
-					} else {
-						if (input.trim().startsWith("!login")) {
-							if (s.getIv() == null && s.getSecretKey() == null) {
-								input += " " + clientTCPPort;
-								answer = s.login(input);
-								tcpListener.setClientPrivKey(s.getClientPrivKey());
-								if (!signedBids.isEmpty()) {
-									for (String signedBid : signedBids) {
-										System.out.println(s.sendAndReceive(signedBid));
-									}
-									signedBids.clear();
-								}								
-							}
-							else {
-								answer = "Already logged in! Logout first!";
-							}
-						} else if (input.trim().startsWith("!end")) {
-							System.out.println("Shutting down...");
-							shutdown = true;
-							break;
-						} else if (input.trim().startsWith("!list")) {
-							s.sendLine(input);
-							String temp = "";
-							boolean mismatch = false;
-							if(username.equals("")) {
-								while (!(temp = s.readLine()).equals("ready")) {
-									answer += "\n" + temp;
+
+							while (!(temp = s.readLine()).equals("ready")) {
+								if(!verify(temp)) {
+									mismatch = true;
 								}
-							} else {
+								//
+								System.out.println(verify(temp));
+								answer += "\n" + removeHash(temp);
+							}
+							//
+
+							if(mismatch) {
+								System.out.println("Verification failed!!! \n" + answer);
+								answer = "";
+								mismatch= false;
+								s.sendLine("!verify");
 								while (!(temp = s.readLine()).equals("ready")) {
 									if(!verify(temp)) {
 										mismatch = true;
 									}
 									System.out.println(verify(temp));
 									answer += "\n" + removeHash(temp);
+									//
 								}
-
 								if(mismatch) {
-									System.out.println("Verification failed!!! \n" + answer);
-									answer = "";
-									mismatch= false;
-									s.sendLine("!verify");
-									while (!(temp = s.readLine()).equals("ready")) {
-										if(!verify(temp)) {
-											mismatch = true;
-										}
-										System.out.println(verify(temp));
-										answer += "\n" + removeHash(temp);
-										//
-									}
-									if(mismatch) {
-										answer += "\n Verification failed again!!";
-									}
+									answer += "\n Verification failed again!!";
 								}
-
 							}
-						} else if ((input.trim().startsWith("!getClientList"))) {
-							answer = getActiveClients();
 
-						} else if (input.trim().startsWith("!logout")) {
-							answer = s.sendAndReceive(input);
-							s.setIv(null);
-							s.setSecretKey(null);
-						} else {
-							answer = s.sendAndReceive(input);
-						}
-						if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
-							System.out.println("logged in!");
-							username = input.trim().split("\\s+")[1];
-							PROMPT =  username + PROMPT;
-							tcpListener.setUsername(username);
-							getActiveClients();
-						}
-						if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
-							username = "";
-							PROMPT =  username + "> ";
-						}
-						if (input.trim().startsWith("!confirm") && answer.startsWith("You have to wait")) {
-							blocked = true;
-						}
-						System.out.println(answer);
-						answer = "";
+						}					
+					} else if (input.trim().startsWith("!logout")) {
+						answer = s.sendAndReceive(input);
+						s.setIv(null);
+						s.setSecretKey(null);
+					} else {
+						answer = s.sendAndReceive(input);
 					}
+					if (input.trim().startsWith("!login") && answer.startsWith("Successfully logged in as")) {
+						System.out.println("logged in!");
+						username = input.trim().split("\\s+")[1];
+						PROMPT =  username + PROMPT;
+						//udpListener.setUsername(username);
+					}
+					if (input.trim().startsWith("!logout") && answer.startsWith("Successfully logged out as")) {
+						username = "";
+						PROMPT =  username + "> ";
+					}
+					if (input.trim().startsWith("!confirm") && answer.startsWith("You have to wait")) {
+						blocked = true;
+					}
+					
+					System.out.println(answer);
+					answer = "";
+				} catch (UnknownHostException e) {
+					System.err.println("Host not found!");
+				} catch(SocketTimeoutException e) {
+					System.out.println("BiddingClient SocketTimeout!");
+				} catch (IOException e) {
+					System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
+					e.printStackTrace();
+					shutdown = true;
+				} catch (NullPointerException e) {
+					System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
+					e.printStackTrace();
+					shutdown = true;
+				} catch (Exception e) {
+					System.err.println("Login failed");
+					System.err.println(e.getMessage());
 				}
-			} catch (UnknownHostException e) {
-				System.err.println("Host not found!");
-			} catch(SocketTimeoutException e) {
-				System.out.println("BiddingClient SocketTimeout!");
-			} catch (IOException e) {
-				System.out.println("Server down! Bidding still possible!");
-				serverDown = true;
-				//System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-				e.printStackTrace();
-				//shutdown = true;
-			} catch (NullPointerException e) {
-				System.out.println("Server down! Bidding still possible!");
-				serverDown = true;
-				//System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-				e.printStackTrace();
-				//shutdown = true;
-			} catch (Exception e) {
-				System.err.println("Login failed");
-				System.err.println(e.getMessage());										
 			}
 		}
 		try {
@@ -292,51 +232,6 @@ public class BiddingClient implements Runnable
 
 	public static void printPROMPT() {
 		System.out.print(PROMPT);
-	}
-
-	public String getActiveClients() throws IOException {
-		s.sendLine("!getClientList");
-		activeUsers = new ArrayList<User>();
-		String temp = "";
-		String result = "";
-		while (!(temp = s.readLine()).equals("ready")) {
-			result += "\n" + temp;
-			if (!temp.startsWith("You") && !temp.startsWith("No")) {
-				String host = temp.trim().split(":")[0];
-				int port = Integer.parseInt(temp.trim().split(":")[1]);
-				String username = temp.trim().split(":")[2];
-				User tempUser = new User(InetAddress.getByName(host), port, username);
-				activeUsers.add(tempUser);
-			}
-		}
-		System.out.println("Active Users:");
-		return result;
-	}
-
-	public boolean isServerDown() {
-		return serverDown;
-	}
-
-	public void setServerDown(boolean serverDown) {
-		this.serverDown = serverDown;
-		if (!serverDown) {
-			try {
-				sock = new Socket(host, tcpPort);
-				PEMReader in;
-				PublicKey publicKey = null;
-				in = new PEMReader(new FileReader(serverPubKey));
-				publicKey = (PublicKey) in.readObject();
-				s = new SuperSecureSocket(sock, publicKey, clientsKeyDir);
-			} catch (UnknownHostException e) {
-				System.err.println("Host not found!");
-				e.printStackTrace();
-			} catch (IOException e) {
-				System.err.println("Couldn't create socket!");
-				e.printStackTrace();
-			}
-			br = new BufferedReader(new InputStreamReader(s.getInputStream()));
-			bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-		}
 	}
 
 	private boolean verify(String string) {

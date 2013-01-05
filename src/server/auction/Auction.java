@@ -68,7 +68,7 @@ public class Auction
 	
 	public String toString() {
 		String text = getId() + ". '" + getDescription() + "' " + getOwner().getUsername() 
-					  + " " + date.toString() + " " + getHighestBid() + " ";
+					  + " " + date.toString() + " " + new DecimalFormat("#0.00").format(getHighestBid()) + " ";
 		if (getHighestBidder() == null) {
 			text += "none";
 		} else {

@@ -42,7 +42,6 @@ public class SuperSecureSocket
 	private BufferedWriter bw = null;
 	private SecretKey secretKey = null;
 	private IvParameterSpec iv = null;
-	private PrivateKey clientPrivKey = null;
 
 	public SuperSecureSocket(Socket s, Key serverPubPrivKey, String clientsKeyDir) {
 		this.s = s;
@@ -78,8 +77,6 @@ public class SuperSecureSocket
 		if (pK == null) {
 			sendLine("ERROR");
 			throw new Exception("Error getting the private key");
-		} else {
-			this.clientPrivKey = pK;
 		}
 		message2 = decrypt(Base64.decode(commandParts2[1]), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", pK);
 		final String B64 = "a-zA-Z0-9/+";
@@ -353,13 +350,5 @@ public class SuperSecureSocket
 
 	public void setIv(IvParameterSpec iv) {
 		this.iv = iv;
-	}
-
-	public PrivateKey getClientPrivKey() {
-		return clientPrivKey;
-	}
-
-	public void setClientPrivKey(PrivateKey clientPrivKey) {
-		this.clientPrivKey = clientPrivKey;
 	}
 }
