@@ -48,4 +48,8 @@ public class GroupBid {
 			groupUser.remove(u);
 		}
 	}
+	
+	public String toString() {
+		return "AuctionID: " + auctionId + " Amount: " + amount + " Bidder: " + user;
+	}
 }

@@ -228,9 +228,15 @@ public class BiddingClient implements Runnable
 								}
 
 							}					
+						} else if ((input.trim().startsWith("!getGbList"))) {
+							s.sendLine(input);
+							String temp = "";
+							while (!(temp = s.readLine()).equals("ready")) {
+								answer += "\n" + temp;
+							}
 						} else if ((input.trim().startsWith("!getClientList"))) {
 							answer = getActiveClients(); 
-						} else if (input.trim().startsWith("!logout")) {
+						}else if (input.trim().startsWith("!logout")) {
 							answer = s.sendAndReceive(input);
 							s.setIv(null);
 							s.setSecretKey(null);

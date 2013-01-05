@@ -79,7 +79,7 @@ public class Cron implements Runnable
 							System.err.println("Error: Couldn't bill auction! BillingServer may be down!");
 						}
 
-						try {
+						/*try {
 							if (a.getHighestBidder() != null) {
 								BidEvent be = new BidEvent();
 								be.setType("BID_WON");
@@ -101,7 +101,7 @@ public class Cron implements Runnable
 						} catch (RemoteException e) {
 							System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 							//e.printStackTrace();
-						}
+						}*/
 
 						main.auctions.remove(a);
 						/*********************

@@ -146,9 +146,16 @@ public class CommandHandler implements Runnable
 					if (commandParts[0].equals("!list")) {
 						listAuctions();
 						////////////////////////////////////////////
+						// !listGroupBids
+						////////////////////////////////////////////
+					} else if (commandParts[0].equals("!getGbList")) {
+						listGroupBids();
+						System.out.println(main.waitingBids);
+						////////////////////////////////////////////
 						// !login - Client logs in
 						////////////////////////////////////////////
-					} else if(commandParts[0].equals("!login")) {
+					}
+					else if(commandParts[0].equals("!login")) {
 						byte[] clientChallenge = Base64.decode(commandParts[3]);
 						System.out.println(command);
 						System.out.println(commandParts[3]);
@@ -297,7 +304,7 @@ public class CommandHandler implements Runnable
 									main.auctions.add(a);
 									ssock.sendLine("An auction '" + description + "' with id " + a.getId() + " has been created and will end on " 
 											+ date.toString() + ".");
-									try{
+									/*try{
 										AuctionEvent ae = new AuctionEvent();
 										ae.setType("AUCTION_STARTED");
 										ae.setAuctionID(a.getId());
@@ -309,7 +316,7 @@ public class CommandHandler implements Runnable
 										//e.printStackTrace();
 									} catch (ConcurrentModificationException e) {
 										;
-									}
+									}*/
 								}
 							}
 						} else {
@@ -340,7 +347,7 @@ public class CommandHandler implements Runnable
 								}
 									 */
 									if (a.getHighestBidder() != null) {
-										try {
+										/*try {
 											BidEvent be = new BidEvent();
 											be.setType("BID_OVERBID");
 											be.setUsername(a.getHighestBidder().getUsername());
@@ -351,13 +358,13 @@ public class CommandHandler implements Runnable
 										} catch (RemoteException e) {
 											System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 											//e.printStackTrace();
-										}
+										}*/
 									}
 
 									a.setHighestBid(amount);
 									a.setHighestBidder(u);
 									ssock.sendLine("You successfully bid with " + amount + " on '" + a.getDescription() + "'.");
-									try{
+									/*try{
 										BidEvent be = new BidEvent();
 										be.setType("BID_PLACED");
 										be.setUsername(u.getUsername());
@@ -368,7 +375,7 @@ public class CommandHandler implements Runnable
 									} catch (RemoteException e) {
 										System.err.println("Error: Couldn't create event! AnalyticsServer may be down!");
 										//e.printStackTrace();
-									}
+									}*/
 
 								} else {
 									ssock.sendLine("You unsuccessfully bid with " + amount + " on '" + a.getDescription() + "'. Current highest bid is " + (a.getHighestBid()));
@@ -429,7 +436,13 @@ public class CommandHandler implements Runnable
 							} else {
 								gb.confirm(u.getUsername());
 								if(gb.isConfirmed()) {
+									Auction a = main.getAuction(gb.getAuctionId());
+									if(a!=null) {
+										a.setHighestBid(amount);
+										a.setHighestBidder(main.getUser(gb.getUser()));
+									}
 									ssock.sendLine("!confirmed");
+									main.groupBids.remove(gb);
 								} else {
 									clientBlocked = true;
 									timeout = 0;
@@ -572,6 +585,29 @@ public class CommandHandler implements Runnable
 		}
 	}
 
+	public void listGroupBids() {
+		System.out.println("listGroupBids()");
+		try {
+			if (main.groupBids.size() > 0) {
+				for (GroupBid g : main.groupBids) {
+					ssock.sendLine(g.toString());
+				}
+				ssock.sendLine("ready");
+			} else {
+				ssock.sendLine("No groupBids available at the moment!");
+
+				ssock.sendLine("ready");
+			}
+		} catch (IOException e) {
+			System.err.println("Error while returning a groupBid list!");
+			e.printStackTrace();
+		} catch (ConcurrentModificationException e) {
+			;
+
+			//
+		}
+	}
+
 	public void listAuctions() {
 		System.out.println("listAuctions()");
 		try {
@@ -592,7 +628,11 @@ public class CommandHandler implements Runnable
 				}
 				ssock.sendLine("ready");
 			} else {
-				ssock.sendLine("No auctions available at the moment!");
+				if(u.isLoggedIn()) {
+					ssock.sendLine(sign("No auctions available at the moment!"));
+				} else {
+					ssock.sendLine("No auctions available at the moment!");
+				}
 				ssock.sendLine("ready");
 			}
 		} catch (IOException e) {
