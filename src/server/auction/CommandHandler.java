@@ -98,7 +98,7 @@ public class CommandHandler implements Runnable
 					}
 				}
 				timeout++;
-				if(timeout>30) {
+				if(timeout>20) {
 					try {
 						ssock.sendLine("!rejected");
 						main.getGroupBid(blockingGroupBid.getAuctionId(), blockingGroupBid.getAmount(), blockingGroupBid.getUser()).unConfirm(u.getUsername());
@@ -120,17 +120,17 @@ public class CommandHandler implements Runnable
 
 			if(!clientBlocked) {
 				if(!main.waitingBids.isEmpty()) {
-					for(GroupBid g: main.waitingBids) {
-						if(main.checkGroupBid(g) && u.getUsername().equals(g.getUser())) {
-							main.groupBids.add(g);
-							main.waitingBids.remove(g);
-							try {
-								ssock.sendLine("Your groupBid is now ready to be confirmed by 2 other users!");
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+					System.out.println("warte liste nicht leer");
+					try {
+						for(GroupBid g: main.waitingBids) {
+							if(main.checkGroupBid(g)) {
+								System.out.println("groupBid added");
+								main.groupBids.add(g);
+								main.waitingBids.remove(g);
 							}
 						}
+					} catch (ConcurrentModificationException e) {
+						;
 					}
 				}
 

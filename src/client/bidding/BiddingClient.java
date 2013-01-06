@@ -191,9 +191,14 @@ public class BiddingClient implements Runnable
 							s.sendLine(input);
 							String temp = "";
 							boolean mismatch = false;
+							int a = 0;
 							if(username.equals("")) {
 								while (!(temp = s.readLine()).equals("ready")) {
-									answer += "\n" + temp;
+									if(a==0) {
+										answer = temp;
+									} else {
+										answer += "\n" + temp;
+									}
 								}
 							} else {
 
@@ -201,20 +206,29 @@ public class BiddingClient implements Runnable
 									if(!verify(temp)) {
 										mismatch = true;
 									}
-									System.out.println(verify(temp));
-									answer += "\n" + removeHash(temp);
+
+									if(a==0) {
+										answer = removeHash(temp);
+									} else {
+										answer += "\n" + removeHash(temp);
+									}
 								}
 								if(mismatch) {
 									System.out.println("Verification failed!!! \n" + answer);
 									answer = "";
+									a = 0;
 									mismatch= false;
 									s.sendLine("!verify");
 									while (!(temp = s.readLine()).equals("ready")) {
 										if(!verify(temp)) {
 											mismatch = true;
 										}
-										System.out.println(verify(temp));
-										answer += "\n" + removeHash(temp);
+
+										if(a==0) {
+											answer = removeHash(temp);
+										} else {
+											answer += "\n" + removeHash(temp);
+										}
 									}
 									if(mismatch) {
 										answer += "\n Verification failed again!!";
