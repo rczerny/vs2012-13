@@ -52,6 +52,7 @@ public class BiddingClient implements Runnable
 	private BufferedReader br = null;
 	private BufferedWriter bw = null;
 	private boolean blocked = false;
+	private int status = 0;
 
 	public BiddingClient() {
 
@@ -104,9 +105,11 @@ public class BiddingClient implements Runnable
 					String a = s.readLine();
 					if(a.equals("!confirmed")) {
 						blocked = false;
+						status = 1;
 						System.out.println("!confirmed");
 					} else if(a.equals("!rejected")) {
 						blocked = false;
+						status = 1;
 						System.out.println("!rejected " + blocked);
 						answer = "rejected";
 					} else {
@@ -126,7 +129,14 @@ public class BiddingClient implements Runnable
 
 				try {
 					System.out.print(PROMPT);
-					input = keys.readLine();
+					if(status == 0) {
+						input = keys.readLine();
+					} else {
+						input = keys.readLine();
+						input = "";
+						status = 0;
+					}
+					
 					if (serverDown) {
 						if (input.trim().startsWith("!bid") && activeUsers != null) {
 							if (activeUsers.size() < 2) {
