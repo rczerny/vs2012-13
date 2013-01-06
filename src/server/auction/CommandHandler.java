@@ -119,21 +119,6 @@ public class CommandHandler implements Runnable
 			}
 
 			if(!clientBlocked) {
-				if(!main.waitingBids.isEmpty()) {
-					System.out.println("warte liste nicht leer");
-					try {
-						for(GroupBid g: main.waitingBids) {
-							if(main.checkGroupBid(g)) {
-								System.out.println("groupBid added");
-								main.groupBids.add(g);
-								main.waitingBids.remove(g);
-							}
-						}
-					} catch (ConcurrentModificationException e) {
-						;
-					}
-				}
-
 				try {
 					//sock.setSoTimeout(1000);
 					String command = "";
