@@ -7,6 +7,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -122,11 +123,20 @@ public class Cron implements Runnable
 
 				if(!main.waitingBids.isEmpty()) {
 					//System.out.println("warte liste nicht leer");
-					for(GroupBid g: main.waitingBids) {
-						if(main.checkGroupBid(g)) {
-							System.out.println("groupBid added");
-							main.groupBids.add(g);
-							main.waitingBids.remove(g);
+					GroupBid g = main.waitingBids.get(0);
+					if(main.checkGroupBid(g)){
+						main.groupBids.add(g);
+						System.out.println("groupBid added");
+						main.waitingBids.remove(g);
+						
+						Iterator<GroupBid> i = main.waitingBids.iterator();
+						while(i.hasNext()) {
+							GroupBid gb = i.next();
+							if(main.checkGroupBid(gb) && g.getAuctionId() == gb.getAuctionId()) {
+								System.out.println("groupBid added");
+								main.groupBids.add(gb);
+								i.remove();
+							}
 						}
 					}
 				}
