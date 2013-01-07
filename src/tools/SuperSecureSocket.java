@@ -67,7 +67,7 @@ public class SuperSecureSocket
 		String message2S = sendAndReceive(message1);
 		byte[] message2 = message2S.getBytes();
 		if (message2S == null || !message2S.trim().startsWith("!ok"))
-			return "Login failed! Are you sure, there is a keypair for you?";
+			return "Login failed! Are you sure, there is a keypair for you and this user isn't logged in at another session?";
 		message2S = message2S.trim();
 		String[] commandParts2 = message2S.split("\\s+");
 		PrivateKey pK = getPEMPrivateKey(clientsKeyDir + username + ".pem");
