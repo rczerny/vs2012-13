@@ -421,6 +421,8 @@ public class BiddingClient implements Runnable
 
 	public void setServerDown(boolean serverDown) {
 		this.serverDown = serverDown;
+		username = "";
+		PROMPT =  username + PROMPT;
 		if (!serverDown) {
 			try {
 				sock = new Socket(host, tcpPort);

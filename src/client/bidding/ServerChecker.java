@@ -45,16 +45,22 @@ public class ServerChecker implements Runnable
 		}
 
 		public void run() {
-			if (main.isServerDown()) {
-				try {
-					s = new Socket(host, port);
-					s.close();
-					System.out.println("Server is back online!");
+			try {
+				s = new Socket(host, port);
+				s.close();
+				if (main.isServerDown()) {
 					main.setServerDown(false);
-				} catch (UnknownHostException e) {
-					;
-				} catch (IOException e) {
-					;
+					System.out.println("Server is back online!");
+				}
+			} catch (UnknownHostException e) {
+				if (!main.isServerDown()) {
+					System.out.println("Server down!");
+					main.setServerDown(true);
+				}
+			} catch (IOException e) {
+				if (!main.isServerDown()) {
+					System.out.println("Server down!");
+					main.setServerDown(true);
 				}
 			}
 		}

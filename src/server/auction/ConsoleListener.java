@@ -28,8 +28,10 @@ public class ConsoleListener implements Runnable
 						u.getSocket().close();
 						u.setLoggedIn(false);
 					}
+					System.out.println("Server stopped.");
 				} else if (input.equals("!reconnect")) {
 					main.setStopped(false);
+					System.out.println("Server back online.");
 				}
 			} catch (IOException e) {
 				System.err.println("Console I/O error!");

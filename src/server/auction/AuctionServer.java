@@ -82,6 +82,10 @@ public class AuctionServer
 	public void setShutdown(boolean shutdown) {
 		this.shutdown = shutdown;
 	}
+	
+	public ServerSocket getSSock() {
+		return ssock;
+	}
 
 	public void runServer(String billingBindingName) {
 		pool.execute(new ConsoleListener(this));
@@ -92,15 +96,18 @@ public class AuctionServer
 				while (stopped && !shutdown) {
 					Thread.sleep(1000);
 				}
-				if (!stopped)
+				if (!stopped) {
 					pool.execute(new CommandHandler(ssock.accept(), this));
+				}
 			} catch (SocketTimeoutException e) {
 				;
 			} catch (IOException e) {
-				System.err.println("Server offline!");
+				//System.err.println("Server offline!");
 				//e.printStackTrace();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
+			} catch (Exception e) {
+				
 			}
 		}
 		shutdown();
@@ -108,7 +115,7 @@ public class AuctionServer
 
 	public void shutdown() {
 		System.out.println("Shutting down...");
-		//tt.cancel();
+		tt.cancel();
 		shutdown = true;
 		pool.shutdown();
 		try {
@@ -123,6 +130,7 @@ public class AuctionServer
 			System.err.println("Error starting or shutting down the server!");
 			//e.printStackTrace();
 		}
+		System.exit(0);
 	}
 
 	public int getHighestAuctionID() {
