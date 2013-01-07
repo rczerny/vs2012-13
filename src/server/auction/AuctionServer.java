@@ -59,11 +59,12 @@ public class AuctionServer
 			privateKey = keyPair.getPrivate();
 		} catch (FileNotFoundException e) {
 			System.err.println("Couldn't find private key!");
-			e.printStackTrace();
+			shutdown = true;
 		} catch (IOException e) {
 			System.err.println("Couldn't read Private Key!");
-			e.printStackTrace();
+			shutdown = true;
 		}
+		System.out.println("Successfully loaded Server Private Key!");
 		try {
 			ssock = new ServerSocket(this.port);
 			ssock.setSoTimeout(500);
@@ -88,7 +89,7 @@ public class AuctionServer
 		pool.execute(tt);
 		while (!shutdown) {
 			try {
-				while (stopped) {
+				while (stopped && !shutdown) {
 					Thread.sleep(1000);
 				}
 				if (!stopped)
@@ -107,7 +108,7 @@ public class AuctionServer
 
 	public void shutdown() {
 		System.out.println("Shutting down...");
-		tt.cancel();
+		//tt.cancel();
 		shutdown = true;
 		pool.shutdown();
 		try {
@@ -120,7 +121,7 @@ public class AuctionServer
 			Thread.currentThread().interrupt();
 		} catch (IOException e) {
 			System.err.println("Error starting or shutting down the server!");
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 
@@ -222,7 +223,7 @@ public class AuctionServer
 			}
 		}
 
-		if(activeAuctions.size()<= activeUser) {
+		if(activeAuctions.size() <= activeUser) {
 			allowed = true;
 		}
 

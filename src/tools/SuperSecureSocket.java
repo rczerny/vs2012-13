@@ -67,28 +67,30 @@ public class SuperSecureSocket
 		String message2S = sendAndReceive(message1);
 		byte[] message2 = message2S.getBytes();
 		if (message2S == null || !message2S.trim().startsWith("!ok"))
-			throw new Exception("Error while sending 1st message!");
+			return "Login failed! Are you sure, there is a keypair for you?";
 		message2S = message2S.trim();
 		String[] commandParts2 = message2S.split("\\s+");
 		PrivateKey pK = getPEMPrivateKey(clientsKeyDir + username + ".pem");
 		if (pK == null) {
 			sendLine("ERROR");
-			throw new Exception("Error getting the private key");
+			return "Error getting the private key. Password may be wrong or private key not found!";
 		} else {
 			this.clientPrivKey = pK;
 		}
 		message2 = decrypt(Base64.decode(commandParts2[1]), "RSA/NONE/OAEPWithSHA256AndMGF1Padding", pK);
 		final String B64 = "a-zA-Z0-9/+";
 		assert ("!ok " + new String(message2)).matches("!ok ["+B64+"]{43}= ["+B64+"]{43}= ["+B64+"]{43}= ["+B64+"]{22}==") : "2nd message";
+		System.out.println("Second message OK!");
 		commandParts2 = new String("!ok " + new String(message2)).trim().split("\\s+");
 		byte[] serverChallenge = Base64.decode(commandParts2[2]);
+		assert new String(commandParts2[2]).matches("["+B64+"]{43}=") : "3rd message";
 		SecretKey secretKey = new SecretKeySpec(Base64.decode(commandParts2[3]), "AES");
 		this.secretKey = secretKey;
 		IvParameterSpec iv = new IvParameterSpec(Base64.decode(commandParts2[4]));
 		this.iv = iv;
 		if (commandParts2[0].equals("!ok")) {
 			if (new String(Base64.decode(commandParts2[1].getBytes())).equals(new String(clientChallenge))) {
-				result = new String(sendAndReceive(new String(serverChallenge)));
+				result = new String(sendAndReceive(new String(commandParts2[2])));
 				if (result == null || result.equals(""))
 					throw new Exception("Error while sending 3rd message!");
 			}
@@ -120,7 +122,7 @@ public class SuperSecureSocket
 			//}
 		} catch (IOException e) {
 			System.err.println("Error while communicating with the server!");
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		return result;
 	}
@@ -267,11 +269,11 @@ public class SuperSecureSocket
 			KeyPair keyPair = (KeyPair) in.readObject(); 
 			privateKey = keyPair.getPrivate();
 		} catch (FileNotFoundException e) {
-			System.err.println("Couldn't find private key!");
-			e.printStackTrace();
+			//System.err.println("Couldn't find private key!");
+			//e.printStackTrace();
 		} catch (IOException e) {
-			System.err.println("Couldn't read Private Key!");
-			e.printStackTrace();
+			//System.err.println("Couldn't read Private Key!");
+			//e.printStackTrace();
 		}
 		return privateKey;
 	}
@@ -283,11 +285,9 @@ public class SuperSecureSocket
 			in = new PEMReader(new FileReader(pathToPublicKey));
 			publicKey = (PublicKey) in.readObject();
 		} catch (FileNotFoundException e) {
-			System.err.println("Couldn't find public key!");
-			e.printStackTrace();
+			//System.err.println("Couldn't find public key!");
 		} catch (IOException e) {
-			System.err.println("Couldn't read public key!");
-			e.printStackTrace();
+			//System.err.println("Couldn't read public key!");
 		}
 		return publicKey;
 	}

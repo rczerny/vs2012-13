@@ -25,8 +25,10 @@ public class TCPListener implements Runnable {
 	private BufferedReader br = null;
 	private BufferedWriter bw = null;
 	private PrivateKey clientPrivKey = null;
+	private BiddingClient main = null;
 
-	public TCPListener(int tcpPort, String username) throws SocketException{
+	public TCPListener(BiddingClient main, int tcpPort, String username) throws SocketException {
+		this.main = main;
 		this.username = username;
 		this.tcpPort = tcpPort;
 		try {
@@ -44,7 +46,7 @@ public class TCPListener implements Runnable {
 
 	public void run() {
 		String input = "";
-		while(!shutdown) {
+		while(!shutdown && !main.isShutdown()) {
 			try {
 				socket = serverSocket.accept();
 				System.out.println("TCPListener got connection: " + tcpPort);

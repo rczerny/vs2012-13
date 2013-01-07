@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.rmi.NotBoundException;
@@ -32,9 +33,6 @@ import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
 import server.analytics.AnalyticsServerRMI;
-//import server.analytics.AuctionEvent;
-//import server.analytics.BidEvent;
-//import server.analytics.UserEvent;
 import tools.PropertiesParser;
 import tools.SuperSecureSocket;
 
@@ -52,9 +50,9 @@ public class CommandHandler implements Runnable
 	private int timeout = 0;
 
 	//RMI Analytics Server
-	private AnalyticsServerRMI as = null;
+	/*private AnalyticsServerRMI as = null;
 	private PropertiesParser ps = null;
-	private Registry reg = null;
+	private Registry reg = null;*/
 
 	public CommandHandler(Socket s, AuctionServer main) {
 		this.sock = s;
@@ -63,7 +61,7 @@ public class CommandHandler implements Runnable
 		br = new BufferedReader(new InputStreamReader(ssock.getInputStream()));
 		bw = new BufferedWriter(new OutputStreamWriter(ssock.getOutputStream()));
 
-		try {
+		/*try {
 			ps = new PropertiesParser("registry.properties");
 			int portNr = Integer.parseInt(ps.getProperty("registry.port"));
 			String host = ps.getProperty("registry.host");
@@ -81,7 +79,7 @@ public class CommandHandler implements Runnable
 		} catch (NotBoundException e) {
 			System.out.println("Specified remote object couldn't be found in registry!");
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	public void run() {
@@ -112,7 +110,6 @@ public class CommandHandler implements Runnable
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -178,8 +175,12 @@ public class CommandHandler implements Runnable
 												ssock.setIv(new IvParameterSpec(iv));
 												String message3 = ssock.readLine();
 												if (!message3.equals("")) {
-													assert new String(Base64.encode(message3.getBytes())).matches("["+B64+"]{43}=") : "3rd message";
-													if (message3.equals(new String(serverChallenge))) {
+													//System.out.println("Third Message B64: " + new String(Base64.encode(message3.getBytes())));
+													System.out.println("Third Message Length: " + Base64.decode(message3).length);
+													System.out.println("Third Message B64-Length: " + message3.getBytes().length);
+													assert new String(message3.getBytes()).matches("["+B64+"]{43}=") : "3rd message";
+													if (new String(Base64.decode(message3)).equals(new String(serverChallenge))) {
+														System.out.println("Yes! serverChallengeMatch!");
 														if (u == null) { // new user?
 															u = new User(sock);
 															u.setUsername(username);
@@ -352,13 +353,13 @@ public class CommandHandler implements Runnable
 						////////////////////////////////////////////
 					}else if(commandParts[0].equals("!groupBid")) {
 						if (commandParts.length != 3) {
-							ssock.sendLine("Invalid command! Should be !groupBid <auction-id> <amount>");
+							ssock.sendLine("!rejected Invalid command! Should be !groupBid <auction-id> <amount>");
 						} else if (u != null && u.isLoggedIn()) {
 							int id = Integer.parseInt(commandParts[1]);
 							double amount = Double.parseDouble(commandParts[2]); 
 							Auction a = main.getAuction(id);
 							if (a == null) {
-								ssock.sendLine("Error! Auction not found!");
+								ssock.sendLine("!rejected Error! Auction not found!");
 							} else {
 								if (amount > a.getHighestBid()) {
 									//check if allowed
@@ -375,7 +376,7 @@ public class CommandHandler implements Runnable
 								}
 							}
 						} else {
-							ssock.sendLine("You have to login first!");
+							ssock.sendLine("!rejected You have to login first!");
 						}
 						////////////////////////////////////////////
 						// !confirm - Client confirms groupBid
@@ -564,7 +565,7 @@ public class CommandHandler implements Runnable
 		try {
 			if (main.auctions.size() > 0) {
 				// wenn eingeloggt signieren sonst normal versenden
-				if(u.isLoggedIn()) {
+				if(u != null && u.isLoggedIn()) {
 					String message = "";
 					for (Auction a : main.auctions) {
 						message += "\n" + a.toString();
@@ -595,7 +596,7 @@ public class CommandHandler implements Runnable
 	public void verifyListAuctions() {
 		try {
 			if (main.auctions.size() > 0) {
-				if(u.isLoggedIn()) {
+				if(u != null && u.isLoggedIn()) {
 					for (Auction a : main.auctions) {
 						ssock.sendLine(sign(a.toString()));
 					}
@@ -641,6 +642,7 @@ public class CommandHandler implements Runnable
 			System.out.println("Invalid Key:" + e.getMessage());
 		} catch (IOException e) {
 			System.out.println("I/O Exception:" + e.getMessage());
+			result = "Attention: Following information couldn't be verified:\n" + s;
 		}
 		return result;
 	}

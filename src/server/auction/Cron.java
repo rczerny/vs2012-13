@@ -45,6 +45,7 @@ public class Cron implements Runnable
 			try {
 				for (Auction a : main.auctions) {
 					if (new Date().after(a.getDate())) {
+						/*
 						BillingServerRMI bs = null;
 						BillingServerSecure bss = null;
 						AnalyticsServerRMI as = null;

@@ -19,7 +19,7 @@ public class ConsoleListener implements Runnable
 		while (!main.getShutdown()) {
 			try {
 				input = br.readLine().trim();
-				if (input.equals("!end")) {
+				if (input.equals("!end") || input.equals("!exit")) {
 					main.setShutdown(true);
 					break;
 				} else if (input.equals("!stop")) {
@@ -33,7 +33,7 @@ public class ConsoleListener implements Runnable
 				}
 			} catch (IOException e) {
 				System.err.println("Console I/O error!");
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		}
 	}

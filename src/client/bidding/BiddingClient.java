@@ -70,7 +70,7 @@ public class BiddingClient implements Runnable
 	public void run() {
 		TCPListener tcpListener = null; 
 		try {
-			tcpListener = new TCPListener(clientTCPPort, username);
+			tcpListener = new TCPListener(this, clientTCPPort, username);
 		} catch (SocketException e) {
 			System.err.println("Error opening the datagram socket! Port is probably already used!");
 			return;
@@ -110,7 +110,7 @@ public class BiddingClient implements Runnable
 					} else if(a.equals("!rejected")) {
 						blocked = false;
 						status = 1;
-						System.out.println("!rejected " + blocked);
+						System.out.println("!rejected");
 						answer = "rejected";
 					} else {
 						try {
@@ -122,7 +122,7 @@ public class BiddingClient implements Runnable
 					}
 				} catch (IOException e) {
 					System.err.println("I/O Error! Reading from Server!");
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 			if(!blocked) {
@@ -133,10 +133,10 @@ public class BiddingClient implements Runnable
 						input = keys.readLine();
 					} else {
 						input = keys.readLine();
-						input = "";
+						input = "!list";
 						status = 0;
 					}
-					
+
 					if (serverDown) {
 						if (input.trim().startsWith("!bid") && activeUsers != null) {
 							if (activeUsers.size() < 2) {
@@ -179,21 +179,26 @@ public class BiddingClient implements Runnable
 						}
 					} else {
 						if (input.trim().startsWith("!login")) {
-							if (s.getIv() == null && s.getSecretKey() == null) {
-								input += " " + clientTCPPort;
-								answer = s.login(input);
-								tcpListener.setClientPrivKey(s.getClientPrivKey());
-								if (!signedBids.isEmpty()) {
-									for (String signedBid : signedBids) {
-										System.out.println(s.sendAndReceive(signedBid));
+							String[] commandParts = input.trim().split("\\s+");
+							if (commandParts.length == 2) {
+								if (s.getIv() == null && s.getSecretKey() == null) {
+									input += " " + clientTCPPort;
+									answer = s.login(input);
+									tcpListener.setClientPrivKey(s.getClientPrivKey());
+									if (!signedBids.isEmpty()) {
+										for (String signedBid : signedBids) {
+											System.out.println(s.sendAndReceive(signedBid));
+										}
+										signedBids.clear();
 									}
-									signedBids.clear();
 								}
+								else {
+									answer = "Already logged in! Logout first!";
+								}
+							} else {
+								answer = "Should be !login <username>\nPlease try again!";
 							}
-							else {
-								answer = "Already logged in! Logout first!";
-							}
-						} else if (input.trim().startsWith("!end")) {
+						} else if (input.trim().startsWith("!end") || input.trim().startsWith("!exit")) {
 							System.out.println("Shutting down...");
 							shutdown = true;
 							break;
@@ -224,7 +229,7 @@ public class BiddingClient implements Runnable
 									}
 								}
 								if(mismatch) {
-									System.out.println("Verification failed!!! \n" + answer);
+									System.out.println("Verification failed!!!\n" + answer);
 									answer = "";
 									a = 0;
 									mismatch= false;
@@ -233,7 +238,6 @@ public class BiddingClient implements Runnable
 										if(!verify(temp)) {
 											mismatch = true;
 										}
-
 										if(a==0) {
 											answer = removeHash(temp);
 										} else {
@@ -244,7 +248,6 @@ public class BiddingClient implements Runnable
 										answer += "\n Verification failed again!!";
 									}
 								}
-
 							}					
 						} else if ((input.trim().startsWith("!getGbList"))) {
 							s.sendLine(input);
@@ -281,21 +284,21 @@ public class BiddingClient implements Runnable
 				} catch (UnknownHostException e) {
 					System.err.println("Host not found!");
 				} catch(SocketTimeoutException e) {
-					System.out.println("BiddingClient SocketTimeout!");
+					//System.out.println("BiddingClient SocketTimeout!");
 				} catch (IOException e) {
 					System.out.println("Server down! Bidding still possible!");
 					serverDown = true;
 					//System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-					e.printStackTrace();
+					//e.printStackTrace();
 					//shutdown = true;
 				} catch (NullPointerException e) {
 					System.out.println("Server down! Bidding still possible!");
 					serverDown = true;
 					//System.err.println("I/O Error! Shutting down! The server has probably been shut down.");
-					e.printStackTrace();
+					//e.printStackTrace();
 					//shutdown = true;
 				} catch (Exception e) {
-					System.err.println("Login failed");
+					System.err.println("Error: ");
 					System.err.println(e.getMessage());
 					e.printStackTrace();
 				}
@@ -307,15 +310,21 @@ public class BiddingClient implements Runnable
 			pool.shutdown();
 		} catch (IOException e) {
 			System.err.println("Couldn't close socket!");
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (NullPointerException e) {
 			//udpListener.setShutdown(true);
 			pool.shutdown();
 		}
+		
+		System.exit(0);
 	}
 
 	public static void printPROMPT() {
 		System.out.print(PROMPT);
+	}
+
+	public boolean isShutdown() {
+		return shutdown;
 	}
 
 	private boolean verify(String string) {
