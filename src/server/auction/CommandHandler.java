@@ -395,20 +395,24 @@ public class CommandHandler implements Runnable
 							if (gb == null) {
 								ssock.sendLine("Error! GroubBid not found!");
 							} else {
-								gb.confirm(u.getUsername());
-								if(gb.isConfirmed()) {
-									Auction a = main.getAuction(gb.getAuctionId());
-									if(a!=null) {
-										a.setHighestBid(amount);
-										a.setHighestBidder(main.getUser(gb.getUser()));
+								if(!u.getUsername().equals(gb.getUser())) {
+									gb.confirm(u.getUsername());
+									if(gb.isConfirmed()) {
+										Auction a = main.getAuction(gb.getAuctionId());
+										if(a!=null) {
+											a.setHighestBid(amount);
+											a.setHighestBidder(main.getUser(gb.getUser()));
+										}
+										ssock.sendLine("!confirmed");
+										main.groupBids.remove(gb);
+									} else {
+										clientBlocked = true;
+										timeout = 0;
+										blockingGroupBid = gb;
+										ssock.sendLine("You have to wait for another user to confirm the groupBid");
 									}
-									ssock.sendLine("!confirmed");
-									main.groupBids.remove(gb);
 								} else {
-									clientBlocked = true;
-									timeout = 0;
-									blockingGroupBid = gb;
-									ssock.sendLine("You have to wait for another user to confirm the groupBid");
+									ssock.sendLine("You can't confirm your own bid!");
 								}
 							}
 						} else {
